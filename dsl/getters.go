@@ -1,4 +1,4 @@
-package main
+package dsl
 
 type Getter interface {
 	Get(entry Entry) (interface{}, bool)

@@ -1,8 +1,10 @@
-package main
+package functions
 
 import (
 	"fmt"
 	"strings"
+
+	. "github.com/onsi/sommelier/dsl"
 )
 
 func Playground(e Entries) error {

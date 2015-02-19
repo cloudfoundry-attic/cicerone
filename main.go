@@ -5,14 +5,16 @@ import (
 	"os"
 	"sort"
 
+	. "github.com/onsi/sommelier/dsl"
+	"github.com/onsi/sommelier/functions"
 	"github.com/pivotal-golang/lager/chug"
 )
 
-var functions map[string]func(Entries) error
+var funcs map[string]func(Entries) error
 
 func init() {
-	functions = map[string]func(Entries) error{
-		"playground": Playground,
+	funcs = map[string]func(Entries) error{
+		"playground": functions.Playground,
 	}
 }
 
@@ -23,7 +25,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	f, ok := functions[os.Args[1]]
+	f, ok := funcs[os.Args[1]]
 
 	if !ok {
 		PrintUsage()
@@ -52,7 +54,7 @@ func PrintUsage() {
 	fmt.Println("-----------------------------")
 	fmt.Println("Available functions:")
 	functionNames := []string{}
-	for k := range functions {
+	for k := range funcs {
 		functionNames = append(functionNames, k)
 	}
 	sort.Strings(functionNames)
