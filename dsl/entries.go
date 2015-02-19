@@ -7,6 +7,15 @@ import (
 
 type Entries []Entry
 
+func (e Entries) First(matcher Matcher) (Entry, bool) {
+	for _, entry := range e {
+		if matcher.Match(entry) {
+			return entry, true
+		}
+	}
+	return Entry{}, false
+}
+
 func (e Entries) Filter(matcher Matcher) Entries {
 	filtered := Entries{}
 	for _, entry := range e {
@@ -31,6 +40,20 @@ func (e Entries) Dedupe(matcher Matcher) Entries {
 		deduped = append(deduped, entry)
 	}
 	return deduped
+}
+
+func (e Entries) ConstructTimeline(description TimelineDescription, zeroEntry Entry) Timeline {
+	timeline := Timeline{
+		Description: description,
+		ZeroEntry:   zeroEntry,
+	}
+
+	for _, point := range description {
+		entry, _ := e.First(point.Matcher)
+		timeline.Entries = append(timeline.Entries, entry)
+	}
+
+	return timeline
 }
 
 func (e Entries) PairAllWith(firstPairEntry Entry, annotationGetter Getter) EntryPairs {
@@ -159,6 +182,19 @@ func (g *GroupedEntries) Dedupe(matcher Matcher) *GroupedEntries {
 		return nil
 	})
 	return dedupedGroups
+}
+
+func (g *GroupedEntries) ConstructTimelines(description TimelineDescription, zeroEntry Entry) Timelines {
+	timelines := Timelines{}
+
+	g.EachGroup(func(key interface{}, entries Entries) error {
+		timeline := entries.ConstructTimeline(description, zeroEntry)
+		timeline.Annotation = key
+		timelines = append(timelines, timeline)
+		return nil
+	})
+
+	return timelines
 }
 
 func (g *GroupedEntries) FindPairs(first Matcher, last Matcher) EntryPairs {

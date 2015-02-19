@@ -27,6 +27,10 @@ type Entry struct {
 	ID    int
 }
 
+func (e Entry) IsZero() bool {
+	return e.ID == 0
+}
+
 func (e Entry) VM() string {
 	return fmt.Sprintf("%s/%d", e.Job, e.Index)
 }

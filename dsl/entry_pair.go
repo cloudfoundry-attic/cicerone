@@ -2,6 +2,7 @@ package dsl
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -16,6 +17,7 @@ func (e EntryPair) DT() time.Duration {
 }
 
 type DTStats struct {
+	Name      string
 	Min       time.Duration
 	Max       time.Duration
 	Mean      time.Duration
@@ -25,7 +27,21 @@ type DTStats struct {
 }
 
 func (d DTStats) String() string {
-	return fmt.Sprintf("[%d]: %s (%s) < %s < %s (%s)", d.N, d.Min, d.MinWinner.Annotation, d.Mean, d.Max, d.MaxWinner.Annotation)
+	s := fmt.Sprintf("[%d] %s (%s) < %s < %s (%s)", d.N, d.Min, d.MinWinner.Annotation, d.Mean, d.Max, d.MaxWinner.Annotation)
+	if d.Name != "" {
+		s = fmt.Sprintf("%s\n\t%s", d.Name, s)
+	}
+	return s
+}
+
+type DTStatsSlice []DTStats
+
+func (d DTStatsSlice) String() string {
+	s := []string{}
+	for _, dtStat := range d {
+		s = append(s, dtStat.String())
+	}
+	return strings.Join(s, "\n")
 }
 
 type EntryPairs []EntryPair
