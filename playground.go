@@ -51,14 +51,12 @@ func threads(e Entries) error {
 	fmt.Println("Resolving->Resolved   - ", resolvedStats)
 	fmt.Println("Create->Resolved      - ", roundTripStats)
 
-	vmGroups := e.GroupBy(GetVM)
-
-	vmGroups = vmGroups.Filter(Or(
+	vmGroups := e.Filter(Or(
 		MatchMessage(`task-processor\.succeeded-starting-task`),
 		MatchMessage(`task-processor\.starting-task`),
 		MatchMessage(`transitioning-to-complete`),
 		MatchMessage(`succeeded-transitioning-to-complete`),
-	))
+	)).GroupBy(GetVM)
 
 	vmGroups.EachGroup(func(key interface{}, entries Entries) error {
 		groups := entries.GroupBy(DataGetter("task-guid", "container-guid", "guid"))
