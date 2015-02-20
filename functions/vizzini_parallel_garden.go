@@ -3,13 +3,14 @@ package functions
 import (
 	"fmt"
 	"image/color"
+	"path/filepath"
 
 	"code.google.com/p/plotinum/plot"
 	. "github.com/onsi/cicerone/dsl"
 	"github.com/onsi/cicerone/viz"
 )
 
-func VizziniParallelGarden(e Entries) error {
+func VizziniParallelGarden(e Entries, outputDir string) error {
 	byTaskGuid := e.GroupBy(DataGetter("handle", "request.handle"))
 
 	timelineDescription := TimelineDescription{
@@ -56,13 +57,13 @@ func VizziniParallelGarden(e Entries) error {
 		histograms.AddNextSubPlot(p)
 	}
 
-	histograms.Save(27.0, 6.0, "histograms.png")
+	histograms.Save(27.0, 6.0, filepath.Join(outputDir, "histograms.png"))
 
 	timelineBoard := &viz.Board{}
 	p, _ := plot.New()
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(10.0, 10.0, "timelines.png")
+	timelineBoard.Save(10.0, 10.0, filepath.Join(outputDir, "timelines.png"))
 
 	return nil
 }

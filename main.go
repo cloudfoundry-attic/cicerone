@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"sort"
@@ -10,39 +11,43 @@ import (
 	"github.com/pivotal-golang/lager/chug"
 )
 
-var funcs map[string]func(Entries) error
+var funcs map[string]func(Entries, string) error
+
+var outputDir string
 
 func init() {
-	funcs = map[string]func(Entries) error{
+	funcs = map[string]func(Entries, string) error{
 		"fezzik-tasks":            functions.FezzikTasks,
 		"vizzini-parallel-garden": functions.VizziniParallelGarden,
 	}
+
+	flag.StringVar(&outputDir, "output-dir", ".", "Output Directory to store plots")
+	flag.Parse()
 }
 
 func main() {
-
-	if len(os.Args) != 3 {
+	if len(flag.Args()) != 2 {
 		PrintUsage()
 		os.Exit(1)
 	}
 
-	f, ok := funcs[os.Args[1]]
+	f, ok := funcs[flag.Args()[0]]
 
 	if !ok {
 		PrintUsage()
 		os.Exit(1)
 	}
 
-	entries, err := LoadEntries(os.Args[2])
+	entries, err := LoadEntries(flag.Args()[1])
 	if err != nil {
-		fmt.Printf("Failed to load %s\n", os.Args[2])
+		fmt.Printf("Failed to load %s\n", flag.Args()[1])
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
-	err = f(entries)
+	err = f(entries, outputDir)
 	if err != nil {
-		fmt.Printf("Function %s failed", os.Args[1])
+		fmt.Printf("Function %s failed", flag.Args()[0])
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}

@@ -1,7 +1,9 @@
 package functions
 
 import (
+	"fmt"
 	"image/color"
+	"path/filepath"
 
 	"code.google.com/p/plotinum/plot"
 
@@ -9,7 +11,10 @@ import (
 	"github.com/onsi/cicerone/viz"
 )
 
-func FezzikTasks(e Entries) error {
+func FezzikTasks(e Entries, outputDir string) error {
+	fmt.Println("Receptors that handled creates:", e.Filter(MatchMessage(`create\.creating-task`)).GroupBy(GetVM).Keys)
+	fmt.Println("Receptors that handled resolves:", e.Filter(MatchMessage(`resolved-task`)).GroupBy(GetVM).Keys)
+
 	byTaskGuid := e.GroupBy(DataGetter("task-guid", "container-guid", "guid"))
 
 	startToEndTimelineDescription := TimelineDescription{
@@ -26,7 +31,7 @@ func FezzikTasks(e Entries) error {
 	}
 
 	startToEndTimelines := byTaskGuid.ConstructTimelines(startToEndTimelineDescription, e[0])
-	plotFezzikTaskTimelinesAndHistograms(startToEndTimelines, "end-to-end", 3)
+	plotFezzikTaskTimelinesAndHistograms(startToEndTimelines, outputDir, "end-to-end", 3)
 
 	startToScheduledTimelineDescription := TimelineDescription{
 		{"Creating", MatchMessage(`create\.creating-task`)},
@@ -37,12 +42,12 @@ func FezzikTasks(e Entries) error {
 	}
 
 	startToScheduledTimelines := byTaskGuid.ConstructTimelines(startToScheduledTimelineDescription, e[0])
-	plotFezzikTaskTimelinesAndHistograms(startToScheduledTimelines, "scheduling", 0)
+	plotFezzikTaskTimelinesAndHistograms(startToScheduledTimelines, outputDir, "scheduling", 0)
 
 	return nil
 }
 
-func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, prefix string, vmEventIndex int) {
+func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, outputDir string, prefix string, vmEventIndex int) {
 	histograms := viz.NewUniformBoard(len(timelines.Description()), 2, 0.01)
 
 	for i, timelinePoint := range timelines.Description() {
@@ -64,7 +69,7 @@ func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, prefix string, vm
 		p.Add(h)
 		histograms.AddNextSubPlot(p)
 	}
-	histograms.Save(3.0*float64(len(timelines.Description())), 6.0, prefix+"-histograms.png")
+	histograms.Save(3.0*float64(len(timelines.Description())), 6.0, filepath.Join(outputDir, prefix+"-histograms.png"))
 
 	timelines.SortByEndTime()
 	timelineBoard := &viz.Board{}
@@ -72,7 +77,7 @@ func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, prefix string, vm
 	p.Title.Text = "Timelines by End Time"
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, prefix+"-timelines-by-end-time.png")
+	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-end-time.png"))
 
 	//which VM?
 	timelines.SortByVMForEntryAtIndex(vmEventIndex)
@@ -81,7 +86,7 @@ func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, prefix string, vm
 	p.Title.Text = "Timelines by VM"
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, prefix+"-timelines-by-vm.png")
+	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-vm.png"))
 
 	timelines.SortByStartTime()
 	timelineBoard = &viz.Board{}
@@ -89,5 +94,5 @@ func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, prefix string, vm
 	p.Title.Text = "Timelines by Start Time"
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, prefix+"-timelines-by-start-time.png")
+	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-start-time.png"))
 }
