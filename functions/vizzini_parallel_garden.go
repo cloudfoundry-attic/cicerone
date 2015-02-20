@@ -13,6 +13,7 @@ import (
 func VizziniParallelGarden(e Entries) error {
 	byTaskGuid := e.GroupBy(DataGetter("handle"))
 
+	//can we get Creating and Created in here? need to pass GroupBy a Getter than can parse JSON data, etc...
 	timelineDescription := TimelineDescription{
 		{"Memory", MatchMessage(`garden-server\.limit-memory\.limited`)},
 		{"Disk", MatchMessage(`garden-server\.limit-disk\.limited`)},
@@ -23,12 +24,14 @@ func VizziniParallelGarden(e Entries) error {
 		{"Finish-Streaming", MatchMessage(`garden-server\.stream-out\.streamed-out`)},
 	}
 
-	timelines := byTaskGuid.ConstructTimelines(timelineDescription, e[0])
+	firstEvent, _ := e.First(MatchMessage(`garden-server.create.creating`))
+
+	timelines := byTaskGuid.ConstructTimelines(timelineDescription, firstEvent)
 	fmt.Println(timelines)
 
 	fmt.Println(timelines.DTStatsSlice())
 
-	board := viz.NewUniformBoard(7, 2, 0.01)
+	histograms := viz.NewUniformBoard(7, 2, 0.01)
 
 	for i, timelinePoint := range timelineDescription {
 		entryPairs := timelines.EntryPairs(i)
@@ -37,7 +40,7 @@ func VizziniParallelGarden(e Entries) error {
 		h := viz.NewEntryPairsHistogram(entryPairs, 30)
 		h.Color = color.RGBA{0, 0, 255, 255}
 		p.Add(h)
-		board.AddNextSubPlot(p)
+		histograms.AddNextSubPlot(p)
 	}
 
 	for i, timelinePoint := range timelineDescription {
@@ -47,11 +50,16 @@ func VizziniParallelGarden(e Entries) error {
 		h := viz.NewScaledEntryPairsHistogram(entryPairs, 30, 0, 45*time.Second)
 		h.Color = color.RGBA{255, 0, 0, 255}
 		p.Add(h)
-		board.AddNextSubPlot(p)
+		histograms.AddNextSubPlot(p)
 	}
 
-	return board.Save(21.0, 6.0, "test.png")
+	histograms.Save(21.0, 6.0, "test.png")
 
-	//timeline description => pair stats (histograms)
+	timelineBoard := &viz.Board{}
+	p, _ := plot.New()
+	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
+	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
+	timelineBoard.Save(10.0, 10.0, "timelines.png")
 
+	return nil
 }

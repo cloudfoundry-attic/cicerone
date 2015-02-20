@@ -3,6 +3,7 @@ package dsl
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pivotal-cf-experimental/veritas/say"
 )
@@ -61,6 +62,30 @@ func (t Timeline) EntryPair(index int) (EntryPair, bool) {
 	}, true
 }
 
+func (t Timeline) BeginsAt() time.Time {
+	for _, entry := range t.Entries {
+		if entry.IsZero() {
+			continue
+		}
+		return entry.Timestamp
+	}
+
+	return time.Unix(0, 0)
+}
+
+func (t Timeline) EndsAt() time.Time {
+	for i := len(t.Entries) - 1; i > 0; i-- {
+		entry := t.Entries[i]
+		if entry.IsZero() {
+			continue
+		}
+		return entry.Timestamp
+
+	}
+
+	return time.Unix(0, 0)
+}
+
 type Timelines []Timeline
 
 func (t Timelines) String() string {
@@ -102,4 +127,28 @@ func (t Timelines) DTStatsSlice() DTStatsSlice {
 		dtStats = append(dtStats, stats)
 	}
 	return dtStats
+}
+
+func (t Timelines) StartsAfter() time.Duration {
+	min := time.Hour * 100000
+	for _, timeline := range t {
+		dt := timeline.BeginsAt().Sub(timeline.ZeroEntry.Timestamp)
+		if dt < min {
+			min = dt
+		}
+	}
+
+	return min
+}
+
+func (t Timelines) EndsAfter() time.Duration {
+	max := -time.Hour * 100000
+	for _, timeline := range t {
+		dt := timeline.EndsAt().Sub(timeline.ZeroEntry.Timestamp)
+		if dt > max {
+			max = dt
+		}
+	}
+
+	return max
 }
