@@ -3,7 +3,6 @@ package functions
 import (
 	"fmt"
 	"image/color"
-	"time"
 
 	"code.google.com/p/plotinum/plot"
 	. "github.com/onsi/sommelier/dsl"
@@ -37,7 +36,7 @@ func VizziniParallelGarden(e Entries) error {
 
 	fmt.Println(timelines.DTStatsSlice())
 
-	histograms := viz.NewUniformBoard(7, 2, 0.01)
+	histograms := viz.NewUniformBoard(9, 2, 0.01)
 
 	for i, timelinePoint := range timelineDescription {
 		entryPairs := timelines.EntryPairs(i)
@@ -53,13 +52,13 @@ func VizziniParallelGarden(e Entries) error {
 		entryPairs := timelines.EntryPairs(i)
 		p, _ := plot.New()
 		p.Title.Text = timelinePoint.Name
-		h := viz.NewScaledEntryPairsHistogram(entryPairs, 30, 0, 45*time.Second)
+		h := viz.NewScaledEntryPairsHistogram(entryPairs, 50, 0, timelines.EndsAfter())
 		h.Color = color.RGBA{255, 0, 0, 255}
 		p.Add(h)
 		histograms.AddNextSubPlot(p)
 	}
 
-	histograms.Save(21.0, 6.0, "test.png")
+	histograms.Save(27.0, 6.0, "histograms.png")
 
 	timelineBoard := &viz.Board{}
 	p, _ := plot.New()

@@ -15,7 +15,7 @@ var defaultFont vg.Font
 func init() {
 	var err error
 	plot.DefaultFont = "Helvetica"
-	defaultFont, err = vg.MakeFont("Helvetica", 10)
+	defaultFont, err = vg.MakeFont("Helvetica", 6)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -100,7 +100,7 @@ func (t *TimelinesPlotter) Plot(da plot.DrawArea, p *plot.Plot) {
 	x := t.MinSeconds + dx
 	for i := 1; i < len(description); i++ {
 		da.SetColor(TimelineColors[i])
-		da.Fill(PathRectangle(trY(y+1), trX(x+dx), trY(y), trX(x)))
+		da.Fill(PathRectangle(trY(y+t.legendHeight()*0.5), trX(x+dx), trY(y+t.legendHeight()*0.1), trX(x)))
 		x += dx
 	}
 
@@ -112,14 +112,18 @@ func (t *TimelinesPlotter) Plot(da plot.DrawArea, p *plot.Plot) {
 	x = t.MinSeconds + dx
 
 	for i := 0; i < len(description); i++ {
-		da.FillText(textStyle, trX(x), trY(y+1.1), -0.5, 0, description[i].Name)
+		da.FillText(textStyle, trX(x), trY(y+t.legendHeight()*0.6), -0.5, 0, description[i].Name)
 		x += dx
 	}
 }
 
+func (t *TimelinesPlotter) legendHeight() float64 {
+	return float64(len(t.Timelines)) * 0.05
+}
+
 func (t *TimelinesPlotter) DataRange() (xmin, xmax, ymin, ymax float64) {
 	ymin = 0.0
-	ymax = float64(len(t.Timelines)) + t.Padding*float64(len(t.Timelines)+1) + 2
+	ymax = float64(len(t.Timelines)) + t.Padding*float64(len(t.Timelines)+1) + t.legendHeight()
 	xmin = t.MinSeconds
 	xmax = t.MaxSeconds
 

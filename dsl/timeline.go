@@ -104,6 +104,24 @@ func (t Timelines) Description() TimelineDescription {
 	return t[0].Description
 }
 
+type byVMForEntryAtIndex struct {
+	Timelines
+	index int
+}
+
+func (s byVMForEntryAtIndex) Less(i, j int) bool {
+	a := s.Timelines[i].Entries[s.index].VM()
+	b := s.Timelines[j].Entries[s.index].VM()
+	if a == b {
+		return !s.Timelines[i].Entries[s.index].Timestamp.After(s.Timelines[j].Entries[s.index].Timestamp)
+	}
+	return a < b
+}
+
+func (t Timelines) SortByVMForEntryAtIndex(index int) {
+	sort.Sort(byVMForEntryAtIndex{t, index})
+}
+
 type byEntryAtIndex struct {
 	Timelines
 	index int
@@ -127,6 +145,18 @@ func (s byEndTime) Less(i, j int) bool {
 
 func (t Timelines) SortByEndTime() {
 	sort.Sort(byEndTime{t})
+}
+
+type byStartTime struct {
+	Timelines
+}
+
+func (s byStartTime) Less(i, j int) bool {
+	return !s.Timelines[i].BeginsAt().After(s.Timelines[j].BeginsAt())
+}
+
+func (t Timelines) SortByStartTime() {
+	sort.Sort(byStartTime{t})
 }
 
 func (t Timelines) EntryPairs(index int) EntryPairs {
