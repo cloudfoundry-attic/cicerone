@@ -11,19 +11,20 @@ import (
 )
 
 func FezzikTasks(e Entries) error {
+
 	byTaskGuid := e.GroupBy(DataGetter("task-guid", "container-guid", "guid"))
 
 	timelineDescription := TimelineDescription{
 		{"Creating", MatchMessage(`create\.creating-task`)},
-		{"Persisting", MatchMessage(`create\.requesting-task-auction`)},
+		{"Persisted", MatchMessage(`create\.requesting-task-auction`)},
 		{"Auction-Submitted", MatchMessage(`create\.created`)},
 		{"Starting", MatchMessage(`task-processor\.starting-task`)},
 		{"Persisted-Starting", MatchMessage(`task-processor\.succeeded-starting-task`)},
-		{"Created-Container", MatchMessage(`run-container\.run\.started`)},
-		{"Spawned-Process", MatchMessage(`run-step-process\.succeeded-transitioning-to-running`)},
-		{"Completing-Task", MatchMessage(`task-processor\.completing-task`)},
-		{"Persisted-Completed", MatchMessage(`task-processor\.succeeded-completing-task`)},
-		{"Resolved", MatchMessage(`resolved-task`)},
+		// {"Created-Container", MatchMessage(`run-container\.run\.started`)},
+		// {"Spawned-Process", MatchMessage(`run-step-process\.succeeded-transitioning-to-running`)},
+		// {"Completing-Task", MatchMessage(`task-processor\.completing-task`)},
+		// {"Persisted-Completed", MatchMessage(`task-processor\.succeeded-completing-task`)},
+		// {"Resolved", MatchMessage(`resolved-task`)},
 	}
 
 	timelines := byTaskGuid.ConstructTimelines(timelineDescription, e[0])
@@ -53,29 +54,32 @@ func FezzikTasks(e Entries) error {
 		histograms.AddNextSubPlot(p)
 	}
 
-	histograms.Save(30.0, 6.0, "histograms.png")
+	histograms.Save(30.0, 6.0, "scheduling_histograms.png")
+
+	//Add overlays to these:
+	// - when auctions start/end
+	// - when convergence happens (if at all)
 
 	timelines.SortByEndTime()
-
 	timelineBoard := &viz.Board{}
 	p, _ := plot.New()
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, "timelines_by_end_time.png")
+	timelineBoard.Save(16.0, 10.0, "scheduling_timelines_by_end_time.pdf")
 
 	timelines.SortByVMForEntryAtIndex(3)
 	timelineBoard = &viz.Board{}
 	p, _ = plot.New()
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, "timelines_by_vm.png")
+	timelineBoard.Save(16.0, 10.0, "scheduling_timelines_by_vm.pdf")
 
 	timelines.SortByStartTime()
 	timelineBoard = &viz.Board{}
 	p, _ = plot.New()
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, "timelines_by_start_time.png")
+	timelineBoard.Save(16.0, 10.0, "scheduling_timelines_by_start_time.pdf")
 
 	return nil
 }

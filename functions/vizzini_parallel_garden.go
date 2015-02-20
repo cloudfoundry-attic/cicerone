@@ -12,7 +12,6 @@ import (
 func VizziniParallelGarden(e Entries) error {
 	byTaskGuid := e.GroupBy(DataGetter("handle", "request.handle"))
 
-	//can we get Creating and Created in here? need to pass GroupBy a Getter than can parse JSON data, etc...
 	timelineDescription := TimelineDescription{
 		{"Got-Request", MatchMessage(`garden-server\.create\.creating`)},
 		{"Created", MatchMessage(`garden-server\.create\.created`)},
@@ -30,7 +29,6 @@ func VizziniParallelGarden(e Entries) error {
 	timelines := byTaskGuid.ConstructTimelines(timelineDescription, firstEvent)
 
 	timelines.SortByEntryAtIndex(1)
-	// timelines.SortByEndTime()
 
 	fmt.Println(timelines)
 

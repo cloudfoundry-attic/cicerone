@@ -70,7 +70,7 @@ func (e Entries) PairAllWith(firstPairEntry Entry, annotationGetter Getter) Entr
 }
 
 //Find the *first* entry that matches the first matcher, and the *last* entry that matches the last matcher and pair them up
-func (e Entries) FindPair(first Matcher, last Matcher) (EntryPair, bool) {
+func (e Entries) FindFirstPair(first Matcher, last Matcher) (EntryPair, bool) {
 	pair := EntryPair{}
 	found := false
 	for _, entry := range e {
@@ -97,6 +97,30 @@ func (e Entries) FindPair(first Matcher, last Matcher) (EntryPair, bool) {
 	}
 
 	return pair, true
+}
+
+//Find all pairs that match first then last.  Assumes entries aren't interleaved
+func (e Entries) FindAllPairs(first Matcher, last Matcher) EntryPairs {
+	pairs := EntryPairs{}
+	pair := EntryPair{}
+	for _, entry := range e {
+		if first.Match(entry) {
+			if pair.FirstEntry.IsZero() && pair.SecondEntry.IsZero() {
+				pair.FirstEntry = entry
+			} else {
+				pair = EntryPair{
+					FirstEntry: entry,
+				}
+			}
+		} else if second.Match(entry) {
+			if !pair.FirstEntry.IsZero() {
+				pair.SecondEntry = second
+				pairs = append(pairs, pair)
+				pair = EntryPair{}
+			}
+		}
+	}
+	return pairs
 }
 
 func (e Entries) GroupBy(getter Getter) *GroupedEntries {
@@ -197,10 +221,10 @@ func (g *GroupedEntries) ConstructTimelines(description TimelineDescription, zer
 	return timelines
 }
 
-func (g *GroupedEntries) FindPairs(first Matcher, last Matcher) EntryPairs {
+func (g *GroupedEntries) FindFirstPairs(first Matcher, last Matcher) EntryPairs {
 	pairs := EntryPairs{}
 	g.EachGroup(func(key interface{}, entries Entries) error {
-		pair, found := entries.FindPair(first, last)
+		pair, found := entries.FindFirstPair(first, last)
 		if found {
 			pair.Annotation = key
 			pairs = append(pairs, pair)
@@ -208,6 +232,19 @@ func (g *GroupedEntries) FindPairs(first Matcher, last Matcher) EntryPairs {
 		return nil
 	})
 	return pairs
+}
+
+func (g *GroupedEntries) FindAllPairs(first Matcher, last Matcher) EntryPairs {
+	allPairs := EntryPairs{}
+	g.EachGroup(func(key interface{}, entries Entries) error {
+		pairs := entries.FindAllPairs(first, last)
+		for i := range pairs {
+			pairs[i].Annotation = key
+		}
+		allPairs = append(allPairs, pairs...)
+		return nil
+	})
+	return allPairs
 }
 
 func (g *GroupedEntries) WriteLagerFormatTo(w io.Writer) error {
