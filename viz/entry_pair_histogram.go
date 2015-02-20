@@ -5,7 +5,7 @@ import (
 
 	"code.google.com/p/plotinum/plotter"
 
-	. "github.com/onsi/sommelier/dsl"
+	. "github.com/onsi/cicerone/dsl"
 )
 
 func NewEntryPairsHistogram(pairs EntryPairs, n int) *plotter.Histogram {

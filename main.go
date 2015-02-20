@@ -5,8 +5,8 @@ import (
 	"os"
 	"sort"
 
-	. "github.com/onsi/sommelier/dsl"
-	"github.com/onsi/sommelier/functions"
+	. "github.com/onsi/cicerone/dsl"
+	"github.com/onsi/cicerone/functions"
 	"github.com/pivotal-golang/lager/chug"
 )
 

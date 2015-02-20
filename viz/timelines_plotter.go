@@ -7,7 +7,7 @@ import (
 	"code.google.com/p/plotinum/plot"
 	"code.google.com/p/plotinum/vg"
 
-	. "github.com/onsi/sommelier/dsl"
+	. "github.com/onsi/cicerone/dsl"
 )
 
 var defaultFont vg.Font

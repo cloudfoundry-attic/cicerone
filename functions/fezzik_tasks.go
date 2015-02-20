@@ -5,8 +5,8 @@ import (
 
 	"code.google.com/p/plotinum/plot"
 
-	. "github.com/onsi/sommelier/dsl"
-	"github.com/onsi/sommelier/viz"
+	. "github.com/onsi/cicerone/dsl"
+	"github.com/onsi/cicerone/viz"
 )
 
 func FezzikTasks(e Entries) error {
