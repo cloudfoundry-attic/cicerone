@@ -2,6 +2,7 @@ package dsl
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -96,8 +97,36 @@ func (t Timelines) String() string {
 	return strings.Join(s, "\n")
 }
 
+func (t Timelines) Len() int      { return len(t) }
+func (t Timelines) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+
 func (t Timelines) Description() TimelineDescription {
 	return t[0].Description
+}
+
+type byEntryAtIndex struct {
+	Timelines
+	index int
+}
+
+func (s byEntryAtIndex) Less(i, j int) bool {
+	return !s.Timelines[i].Entries[s.index].Timestamp.After(s.Timelines[j].Entries[s.index].Timestamp)
+}
+
+func (t Timelines) SortByEntryAtIndex(index int) {
+	sort.Sort(byEntryAtIndex{t, index})
+}
+
+type byEndTime struct {
+	Timelines
+}
+
+func (s byEndTime) Less(i, j int) bool {
+	return !s.Timelines[i].EndsAt().After(s.Timelines[j].EndsAt())
+}
+
+func (t Timelines) SortByEndTime() {
+	sort.Sort(byEndTime{t})
 }
 
 func (t Timelines) EntryPairs(index int) EntryPairs {

@@ -1,5 +1,7 @@
 package dsl
 
+import "strings"
+
 type Getter interface {
 	Get(entry Entry) (interface{}, bool)
 }
@@ -37,11 +39,27 @@ var GetMessage = GetterFunc(func(entry Entry) (interface{}, bool) {
 func DataGetter(key ...string) Getter {
 	return GetterFunc(func(entry Entry) (interface{}, bool) {
 		for _, k := range key {
-			if v, ok := entry.Data[k]; ok {
+			subKeys := strings.Split(k, ".")
+			if v, ok := getSubKey(entry.Data, subKeys); ok {
 				return v, true
 			}
 		}
 
 		return nil, false
 	})
+}
+
+func getSubKey(data map[string]interface{}, subKeys []string) (interface{}, bool) {
+	v, ok := data[subKeys[0]]
+	if !ok {
+		return nil, false
+	}
+	if len(subKeys) == 1 {
+		return v, true
+	}
+	subData, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, false
+	}
+	return getSubKey(subData, subKeys[1:])
 }
