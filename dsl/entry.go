@@ -65,17 +65,18 @@ func NewEntry(entry chug.Entry) (Entry, error) {
 	}
 
 	result := jobIndexRegExp.FindStringSubmatch(string(entry.Raw))
-	if result == nil || len(result) != 3 {
-		return Entry{}, errors.New("failed to extract job and index")
+	job := "none"
+	index := 0
+	if result != nil && len(result) == 3 {
+		job = result[1]
+		index, _ = strconv.Atoi(result[2])
 	}
-
-	index, _ := strconv.Atoi(result[2])
 
 	entryIDCounter += 1
 
 	return Entry{
 		LogEntry: entry.Log,
-		Job:      result[1],
+		Job:      job,
 		Index:    index,
 		ID:       entryIDCounter,
 	}, nil

@@ -14,8 +14,9 @@ var funcs map[string]func(Entries) error
 
 func init() {
 	funcs = map[string]func(Entries) error{
-		"playground":   functions.Playground,
-		"fezzik-tasks": functions.FezzikTasks,
+		"playground":              functions.Playground,
+		"fezzik-tasks":            functions.FezzikTasks,
+		"vizzini-parallel-garden": functions.VizziniParallelGarden,
 	}
 }
 
