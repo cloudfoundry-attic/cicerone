@@ -99,8 +99,8 @@ func (e Entries) FindFirstPair(first Matcher, last Matcher) (EntryPair, bool) {
 	return pair, true
 }
 
-//Find all pairs that match first then last.  Assumes entries aren't interleaved
-func (e Entries) FindAllPairs(first Matcher, last Matcher) EntryPairs {
+//Find all pairs that match first then second.  Assumes entries aren't interleaved
+func (e Entries) FindAllPairs(first Matcher, second Matcher) EntryPairs {
 	pairs := EntryPairs{}
 	pair := EntryPair{}
 	for _, entry := range e {
@@ -114,7 +114,7 @@ func (e Entries) FindAllPairs(first Matcher, last Matcher) EntryPairs {
 			}
 		} else if second.Match(entry) {
 			if !pair.FirstEntry.IsZero() {
-				pair.SecondEntry = second
+				pair.SecondEntry = entry
 				pairs = append(pairs, pair)
 				pair = EntryPair{}
 			}

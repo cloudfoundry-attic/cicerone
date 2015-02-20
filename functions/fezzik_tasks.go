@@ -1,7 +1,6 @@
 package functions
 
 import (
-	"fmt"
 	"image/color"
 
 	"code.google.com/p/plotinum/plot"
@@ -11,30 +10,42 @@ import (
 )
 
 func FezzikTasks(e Entries) error {
-
 	byTaskGuid := e.GroupBy(DataGetter("task-guid", "container-guid", "guid"))
 
-	timelineDescription := TimelineDescription{
+	startToEndTimelineDescription := TimelineDescription{
 		{"Creating", MatchMessage(`create\.creating-task`)},
 		{"Persisted", MatchMessage(`create\.requesting-task-auction`)},
 		{"Auction-Submitted", MatchMessage(`create\.created`)},
 		{"Starting", MatchMessage(`task-processor\.starting-task`)},
 		{"Persisted-Starting", MatchMessage(`task-processor\.succeeded-starting-task`)},
-		// {"Created-Container", MatchMessage(`run-container\.run\.started`)},
-		// {"Spawned-Process", MatchMessage(`run-step-process\.succeeded-transitioning-to-running`)},
-		// {"Completing-Task", MatchMessage(`task-processor\.completing-task`)},
-		// {"Persisted-Completed", MatchMessage(`task-processor\.succeeded-completing-task`)},
-		// {"Resolved", MatchMessage(`resolved-task`)},
+		{"Created-Container", MatchMessage(`run-container\.run\.started`)},
+		{"Spawned-Process", MatchMessage(`run-step-process\.succeeded-transitioning-to-running`)},
+		{"Completing-Task", MatchMessage(`task-processor\.completing-task`)},
+		{"Persisted-Completed", MatchMessage(`task-processor\.succeeded-completing-task`)},
+		{"Resolved", MatchMessage(`resolved-task`)},
 	}
 
-	timelines := byTaskGuid.ConstructTimelines(timelineDescription, e[0])
-	fmt.Println(timelines)
+	startToEndTimelines := byTaskGuid.ConstructTimelines(startToEndTimelineDescription, e[0])
+	plotFezzikTaskTimelinesAndHistograms(startToEndTimelines, "end-to-end", 3)
 
-	fmt.Println(timelines.DTStatsSlice())
+	startToScheduledTimelineDescription := TimelineDescription{
+		{"Creating", MatchMessage(`create\.creating-task`)},
+		{"Persisted", MatchMessage(`create\.requesting-task-auction`)},
+		{"Auction-Submitted", MatchMessage(`create\.created`)},
+		{"Starting", MatchMessage(`task-processor\.starting-task`)},
+		{"Persisted-Starting", MatchMessage(`task-processor\.succeeded-starting-task`)},
+	}
 
-	histograms := viz.NewUniformBoard(10, 2, 0.01)
+	startToScheduledTimelines := byTaskGuid.ConstructTimelines(startToScheduledTimelineDescription, e[0])
+	plotFezzikTaskTimelinesAndHistograms(startToScheduledTimelines, "scheduling", 0)
 
-	for i, timelinePoint := range timelineDescription {
+	return nil
+}
+
+func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, prefix string, vmEventIndex int) {
+	histograms := viz.NewUniformBoard(len(timelines.Description()), 2, 0.01)
+
+	for i, timelinePoint := range timelines.Description() {
 		entryPairs := timelines.EntryPairs(i)
 		p, _ := plot.New()
 		p.Title.Text = timelinePoint.Name
@@ -44,7 +55,7 @@ func FezzikTasks(e Entries) error {
 		histograms.AddNextSubPlot(p)
 	}
 
-	for i, timelinePoint := range timelineDescription {
+	for i, timelinePoint := range timelines.Description() {
 		entryPairs := timelines.EntryPairs(i)
 		p, _ := plot.New()
 		p.Title.Text = timelinePoint.Name
@@ -53,33 +64,30 @@ func FezzikTasks(e Entries) error {
 		p.Add(h)
 		histograms.AddNextSubPlot(p)
 	}
-
-	histograms.Save(30.0, 6.0, "scheduling_histograms.png")
-
-	//Add overlays to these:
-	// - when auctions start/end
-	// - when convergence happens (if at all)
+	histograms.Save(3.0*float64(len(timelines.Description())), 6.0, prefix+"-histograms.png")
 
 	timelines.SortByEndTime()
 	timelineBoard := &viz.Board{}
 	p, _ := plot.New()
+	p.Title.Text = "Timelines by End Time"
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, "scheduling_timelines_by_end_time.pdf")
+	timelineBoard.Save(16.0, 10.0, prefix+"-timelines-by-end-time.png")
 
-	timelines.SortByVMForEntryAtIndex(3)
+	//which VM?
+	timelines.SortByVMForEntryAtIndex(vmEventIndex)
 	timelineBoard = &viz.Board{}
 	p, _ = plot.New()
+	p.Title.Text = "Timelines by VM"
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, "scheduling_timelines_by_vm.pdf")
+	timelineBoard.Save(16.0, 10.0, prefix+"-timelines-by-vm.png")
 
 	timelines.SortByStartTime()
 	timelineBoard = &viz.Board{}
 	p, _ = plot.New()
+	p.Title.Text = "Timelines by Start Time"
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, "scheduling_timelines_by_start_time.pdf")
-
-	return nil
+	timelineBoard.Save(16.0, 10.0, prefix+"-timelines-by-start-time.png")
 }
