@@ -71,10 +71,25 @@ func (t Timelines) String() string {
 	return strings.Join(s, "\n")
 }
 
+func (t Timelines) Description() TimelineDescription {
+	return t[0].Description
+}
+
+func (t Timelines) EntryPairs(index int) EntryPairs {
+	pairs := EntryPairs{}
+	for _, timeline := range t {
+		pair, ok := timeline.EntryPair(index)
+		if ok {
+			pairs = append(pairs, pair)
+		}
+	}
+
+	return pairs
+}
+
 func (t Timelines) DTStatsSlice() DTStatsSlice {
-	description := t[0].Description
 	dtStats := []DTStats{}
-	for i, timelinePoint := range description {
+	for i, timelinePoint := range t.Description() {
 		pairs := EntryPairs{}
 		for _, timeline := range t {
 			pair, ok := timeline.EntryPair(i)

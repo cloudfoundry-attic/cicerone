@@ -2,8 +2,13 @@ package functions
 
 import (
 	"fmt"
+	"image/color"
+	"time"
+
+	"code.google.com/p/plotinum/plot"
 
 	. "github.com/onsi/sommelier/dsl"
+	"github.com/onsi/sommelier/viz"
 )
 
 func FezzikTasks(e Entries) error {
@@ -39,10 +44,30 @@ func FezzikTasks(e Entries) error {
 
 	fmt.Println(timelines.DTStatsSlice())
 
-	//[X] timeline description => timeline (text)
-	//timeline description => pair stats (text)
-	//timeline description => timeline (visualization)
+	board := viz.NewUniformBoard(5, 4, 0.01)
+
+	for i, timelinePoint := range timelineDescription {
+		entryPairs := timelines.EntryPairs(i)
+		p, _ := plot.New()
+		p.Title.Text = timelinePoint.Name
+		h := viz.NewEntryPairsHistogram(entryPairs, 30)
+		h.Color = color.RGBA{0, 0, 255, 255}
+		p.Add(h)
+		board.AddNextSubPlot(p)
+	}
+
+	for i, timelinePoint := range timelineDescription {
+		entryPairs := timelines.EntryPairs(i)
+		p, _ := plot.New()
+		p.Title.Text = timelinePoint.Name
+		h := viz.NewScaledEntryPairsHistogram(entryPairs, 30, 0, 15*time.Second)
+		h.Color = color.RGBA{255, 0, 0, 255}
+		p.Add(h)
+		board.AddNextSubPlot(p)
+	}
+
+	return board.Save(12.0, 12.0, "test.png")
+
 	//timeline description => pair stats (histograms)
 
-	return nil
 }

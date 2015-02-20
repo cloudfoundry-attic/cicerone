@@ -48,8 +48,8 @@ type EntryPairs []EntryPair
 
 func (e EntryPairs) DTStats() DTStats {
 	var minWinner, maxWinner EntryPair
-	min := time.Hour * 24
-	max := time.Nanosecond
+	min := time.Hour * 1000000
+	max := -time.Hour * 1000000
 	mean := time.Duration(0)
 	for _, pair := range e {
 		dt := pair.DT()
@@ -73,4 +73,46 @@ func (e EntryPairs) DTStats() DTStats {
 		MinWinner: minWinner,
 		MaxWinner: maxWinner,
 	}
+}
+
+func (e EntryPairs) Durations() Durations {
+	durations := Durations{}
+	for _, entry := range e {
+		durations = append(durations, entry.DT())
+	}
+	return durations
+}
+
+type Durations []time.Duration
+
+func (d Durations) Min() time.Duration {
+	min := time.Hour * 1000000
+	for _, duration := range d {
+		if duration < min {
+			min = duration
+		}
+	}
+
+	return min
+}
+
+func (d Durations) Max() time.Duration {
+	max := -time.Hour * 1000000
+	for _, duration := range d {
+		if duration > max {
+			max = duration
+		}
+	}
+
+	return max
+}
+
+func (d Durations) CountInRange(min time.Duration, max time.Duration) int {
+	count := 0
+	for _, duration := range d {
+		if min <= duration && duration < max {
+			count++
+		}
+	}
+	return count
 }
