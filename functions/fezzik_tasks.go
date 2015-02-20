@@ -42,6 +42,9 @@ func FezzikTasks(e Entries, outputDir string) error {
 	}
 
 	startToScheduledTimelines := byTaskGuid.ConstructTimelines(startToScheduledTimelineDescription, e[0])
+
+	fmt.Println(startToScheduledTimelines.DTStatsSlice())
+
 	plotFezzikTaskTimelinesAndHistograms(startToScheduledTimelines, outputDir, "scheduling", 0)
 
 	return nil
