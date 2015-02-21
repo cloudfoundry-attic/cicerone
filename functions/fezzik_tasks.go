@@ -15,33 +15,45 @@ func FezzikTasks(e Entries, outputDir string) error {
 	fmt.Println("Receptors that handled creates:", e.Filter(MatchMessage(`create\.creating-task`)).GroupBy(GetVM).Keys)
 	fmt.Println("Receptors that handled resolves:", e.Filter(MatchMessage(`resolved-task`)).GroupBy(GetVM).Keys)
 
-	byTaskGuid := e.GroupBy(DataGetter("task-guid", "container-guid", "guid"))
+	byTaskGuid := e.GroupBy(DataGetter("task-guid", "container-guid", "guid", "container.guid"))
 	firstEntry := byTaskGuid.Entries[0][0]
 
 	startToEndTimelineDescription := TimelineDescription{
+		// receptor says create.creating-task when it hears about our task
 		{"Creating", MatchMessage(`create\.creating-task`)},
+		// receptor says create.requesting-task-auction after it has bbs.DesiredTask
 		{"Persisted-Task", MatchMessage(`create\.requesting-task-auction`)},
+		// receptor says create.did-fetch-auctioneer-address after it fetches the auctioneer address from the BBS
 		{"Fetched-Auctioneer-Addr", MatchMessage(`create\.did-fetch-auctioneer-address`)},
+		// receptor says create.created after the auction has been submitted (this entails a round-trip to the auctioneer)
 		{"Auction-Submitted", MatchMessage(`create\.created`)},
-		{"Starting", MatchMessage(`task-processor\.starting-task`)},
-		{"Persisted-Starting", MatchMessage(`task-processor\.succeeded-starting-task`)},
-		{"Created-Container", MatchMessage(`run-container\.run\.started`)},
-		{"Spawned-Process", MatchMessage(`run-step-process\.succeeded-transitioning-to-running`)},
+		// executor says allocating-container when the rep asks it to allocate a container for the task (this measures how long it took the auction to place the task on the rep)
+		{"Allocating-Container", MatchMessage(`\.allocating-container`)},
+		// the rep says processing-reserved-container when the executor emits the allocation event
+		{"Notified-Of-Allocation", MatchMessage(`\.processing-reserved-container`)},
+		// the rep says succeeded-starting-task when it succesfully transitions the task from PENDING to RUNNING in the BBS
+		{"Running-In-BBS", MatchMessage(`\.succeeded-starting-task`)},
+		// the executor says succeded-creating-container-in-garden when the garden container is created and ready to go
+		{"Created-Container", MatchMessage(`\.succeeded-creating-container-in-garden`)},
+		// the rep says task-processor.completing-task when it hears the task is complete
 		{"Completing-Task", MatchMessage(`task-processor\.completing-task`)},
+		// the rep says succeeded-completing-task when it transitions the task from RUNNING to COMPLETE
 		{"Persisted-Completed", MatchMessage(`task-processor\.succeeded-completing-task`)},
+		// the receptor says resolved-task when it transitions the task to RESOLVED (after hitting the fezzik callback)
 		{"Resolved", MatchMessage(`resolved-task`)},
 	}
 
 	startToEndTimelines := byTaskGuid.ConstructTimelines(startToEndTimelineDescription, firstEntry)
-	plotFezzikTaskTimelinesAndHistograms(startToEndTimelines, outputDir, "end-to-end", 4)
+	plotFezzikTaskTimelinesAndHistograms(startToEndTimelines, outputDir, "end-to-end", 7)
 
 	startToScheduledTimelineDescription := TimelineDescription{
 		{"Creating", MatchMessage(`create\.creating-task`)},
 		{"Persisted-Task", MatchMessage(`create\.requesting-task-auction`)},
 		{"Fetched-Auctioneer-Addr", MatchMessage(`create\.did-fetch-auctioneer-address`)},
 		{"Auction-Submitted", MatchMessage(`create\.created`)},
-		{"Starting", MatchMessage(`task-processor\.starting-task`)},
-		{"Persisted-Starting", MatchMessage(`task-processor\.succeeded-starting-task`)},
+		{"Allocating-Container", MatchMessage(`\.allocating-container`)},
+		{"Notified-Of-Allocation", MatchMessage(`\.processing-reserved-container`)},
+		{"Running-In-BBS", MatchMessage(`\.succeeded-starting-task`)},
 	}
 
 	startToScheduledTimelines := byTaskGuid.ConstructTimelines(startToScheduledTimelineDescription, firstEntry)
