@@ -16,10 +16,12 @@ func FezzikTasks(e Entries, outputDir string) error {
 	fmt.Println("Receptors that handled resolves:", e.Filter(MatchMessage(`resolved-task`)).GroupBy(GetVM).Keys)
 
 	byTaskGuid := e.GroupBy(DataGetter("task-guid", "container-guid", "guid"))
+	firstEntry := byTaskGuid.Entries[0][0]
 
 	startToEndTimelineDescription := TimelineDescription{
 		{"Creating", MatchMessage(`create\.creating-task`)},
-		{"Persisted", MatchMessage(`create\.requesting-task-auction`)},
+		{"Persisted-Task", MatchMessage(`create\.requesting-task-auction`)},
+		{"Fetched-Auctioneer-Addr", MatchMessage(`create\.did-fetch-auctioneer-address`)},
 		{"Auction-Submitted", MatchMessage(`create\.created`)},
 		{"Starting", MatchMessage(`task-processor\.starting-task`)},
 		{"Persisted-Starting", MatchMessage(`task-processor\.succeeded-starting-task`)},
@@ -30,18 +32,19 @@ func FezzikTasks(e Entries, outputDir string) error {
 		{"Resolved", MatchMessage(`resolved-task`)},
 	}
 
-	startToEndTimelines := byTaskGuid.ConstructTimelines(startToEndTimelineDescription, e[0])
-	plotFezzikTaskTimelinesAndHistograms(startToEndTimelines, outputDir, "end-to-end", 3)
+	startToEndTimelines := byTaskGuid.ConstructTimelines(startToEndTimelineDescription, firstEntry)
+	plotFezzikTaskTimelinesAndHistograms(startToEndTimelines, outputDir, "end-to-end", 4)
 
 	startToScheduledTimelineDescription := TimelineDescription{
 		{"Creating", MatchMessage(`create\.creating-task`)},
-		{"Persisted", MatchMessage(`create\.requesting-task-auction`)},
+		{"Persisted-Task", MatchMessage(`create\.requesting-task-auction`)},
+		{"Fetched-Auctioneer-Addr", MatchMessage(`create\.did-fetch-auctioneer-address`)},
 		{"Auction-Submitted", MatchMessage(`create\.created`)},
 		{"Starting", MatchMessage(`task-processor\.starting-task`)},
 		{"Persisted-Starting", MatchMessage(`task-processor\.succeeded-starting-task`)},
 	}
 
-	startToScheduledTimelines := byTaskGuid.ConstructTimelines(startToScheduledTimelineDescription, e[0])
+	startToScheduledTimelines := byTaskGuid.ConstructTimelines(startToScheduledTimelineDescription, firstEntry)
 
 	fmt.Println(startToScheduledTimelines.DTStatsSlice())
 
@@ -72,6 +75,7 @@ func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, outputDir string,
 		p.Add(h)
 		histograms.AddNextSubPlot(p)
 	}
+	fmt.Println(filepath.Join(outputDir, prefix+"-histograms.png"))
 	histograms.Save(3.0*float64(len(timelines.Description())), 6.0, filepath.Join(outputDir, prefix+"-histograms.png"))
 
 	timelines.SortByEndTime()
