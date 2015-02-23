@@ -163,7 +163,7 @@ func (t Timelines) EntryPairs(index int) EntryPairs {
 	pairs := EntryPairs{}
 	for _, timeline := range t {
 		pair, ok := timeline.EntryPair(index)
-		if ok {
+		if ok && pair.FirstEntry.Timestamp.Before(pair.SecondEntry.Timestamp) {
 			pairs = append(pairs, pair)
 		}
 	}
@@ -174,13 +174,7 @@ func (t Timelines) EntryPairs(index int) EntryPairs {
 func (t Timelines) DTStatsSlice() DTStatsSlice {
 	dtStats := []DTStats{}
 	for i, timelinePoint := range t.Description() {
-		pairs := EntryPairs{}
-		for _, timeline := range t {
-			pair, ok := timeline.EntryPair(i)
-			if ok {
-				pairs = append(pairs, pair)
-			}
-		}
+		pairs := t.EntryPairs(i)
 		stats := pairs.DTStats()
 		stats.Name = timelinePoint.Name
 		dtStats = append(dtStats, stats)
