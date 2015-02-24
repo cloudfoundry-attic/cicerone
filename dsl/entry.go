@@ -20,6 +20,7 @@ func init() {
 	jobIndexRegExp = regexp.MustCompile(`\[job=([a-zA-Z0-9_-]+) index=(\d+)\]`)
 }
 
+//An Entry represtents a Cicerone log line
 type Entry struct {
 	chug.LogEntry
 	Job   string
@@ -27,14 +28,19 @@ type Entry struct {
 	ID    int
 }
 
+//IsZero returns true if the Entry is the zero Entry
 func (e Entry) IsZero() bool {
 	return e.ID == 0
 }
 
+//VM returns a unique idenfitier of the machine that emitted the log line
+//
+//This corresponds to "job/index"
 func (e Entry) VM() string {
 	return fmt.Sprintf("%s/%d", e.Job, e.Index)
 }
 
+//WriteLagerFormatTo emits lager formatted output to the passed-in writer
 func (e Entry) WriteLagerFormatTo(w io.Writer) error {
 	data := lager.Data{}
 	for k, v := range e.Data {
@@ -59,6 +65,11 @@ func (e Entry) WriteLagerFormatTo(w io.Writer) error {
 	return json.NewEncoder(w).Encode(l)
 }
 
+//NewEntry takes a chug.Entry and produces a Chicerone Entry
+//In particular, NewEntry analyzes the raw logline to extract the corresponding Job and Index associated with the logline
+//The expected format for Job/Index is that returned by PaperTrail
+//Job typically corresponds to the BOSH job
+//Index typically corresponds to the BOSH index
 func NewEntry(entry chug.Entry) (Entry, error) {
 	if !entry.IsLager {
 		return Entry{}, errors.New("not a chug entry")

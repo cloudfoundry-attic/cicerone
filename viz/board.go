@@ -15,13 +15,13 @@ import (
 	"code.google.com/p/plotinum/vg/vgsvg"
 )
 
-type Rect struct {
-	X, Y, Width, Height float64
-}
-
 type SubPlot struct {
 	Plot *plot.Plot
 	Rect Rect
+}
+
+type Rect struct {
+	X, Y, Width, Height float64
 }
 
 func (sp SubPlot) ScaledRect(width, height float64) plot.Rect {

@@ -2,20 +2,16 @@ package dsl
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/onsi/say"
 )
 
-type TimelinePoint struct {
-	Name    string
-	Matcher Matcher
-}
-
-type TimelineDescription []TimelinePoint
-
+//Timeline encapsulates a slice of Entries and a corresponding TimelineDescription
+//A Timeline can have an optional - arbitrary - Annotation
+//A Timeline also has a ZeroEntry.  This is used as a zero point to compute the time at which the first entry occurs.
+//The Timeline is effectively comprised of two parallel slices: the TimelineDescription and the slice of Entries.
 type Timeline struct {
 	Annotation  interface{}
 	Description TimelineDescription
@@ -23,6 +19,9 @@ type Timeline struct {
 	Entries     Entries
 }
 
+//String() produces a textual representation of the timeline.
+//The TimelinePoint name and elapsed time are printed for each TimelinePoint in the Timeline's TimelineDescription.
+//If a TimelinePoint is missing a corresponding Entry the TimelinePoint's name is rendered in red.
 func (t Timeline) String() string {
 	s := []string{fmt.Sprintf("%s:", say.Green("%s", t.Annotation))}
 
@@ -39,6 +38,31 @@ func (t Timeline) String() string {
 	return strings.Join(s, " ")
 }
 
+//EntryPair returns the EntryPair at the passed-in index of the Timeline.
+//
+//EntryPair is strict: only timeline points where both the preceding entry and requested entry are non-zero are returned.
+//
+//As a concrete example, consider a Timeline constructed with a TimelineDescription of:
+//
+//	description := {
+//		{"Object-Created", CreateMatcher},
+//		{"Object-Run", RunMatcher},
+//		{"Object-Destroyed", DestroyMatcher}
+//	}
+//
+//Then
+//
+//	timeline.EntryPair(1)
+//
+//Will return an EntryPair where the FirstEntry corresponds to the Object-Created Entry and the SecondEntry corresponds to the Object-Run event.
+//
+//The annotation associated with the resulting EntryPair is set to the Annotation associated with this Timeline.
+//
+//Finally, note that
+//
+//	timeline.EntryPair(0)
+//
+//returns the ZeroEntry as the FirstEntry in the pair.
 func (t Timeline) EntryPair(index int) (EntryPair, bool) {
 	if index >= len(t.Description) {
 		return EntryPair{}, false
@@ -63,6 +87,8 @@ func (t Timeline) EntryPair(index int) (EntryPair, bool) {
 	}, true
 }
 
+//BeginsAt returns the timestamp at which the first non-zero entry in the Timeline occurs
+//Note: BeginsAt does not include the ZeroEntry.
 func (t Timeline) BeginsAt() time.Time {
 	for _, entry := range t.Entries {
 		if entry.IsZero() {
@@ -74,6 +100,7 @@ func (t Timeline) BeginsAt() time.Time {
 	return time.Unix(0, 0)
 }
 
+//EndsAt returns the timestamp at which the last non-zero entry in the Timeline occurs
 func (t Timeline) EndsAt() time.Time {
 	for i := len(t.Entries) - 1; i > 0; i-- {
 		entry := t.Entries[i]
@@ -85,123 +112,4 @@ func (t Timeline) EndsAt() time.Time {
 	}
 
 	return time.Unix(0, 0)
-}
-
-type Timelines []Timeline
-
-func (t Timelines) String() string {
-	s := []string{}
-	for _, timeline := range t {
-		s = append(s, timeline.String())
-	}
-	return strings.Join(s, "\n")
-}
-
-func (t Timelines) Len() int      { return len(t) }
-func (t Timelines) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
-
-func (t Timelines) Description() TimelineDescription {
-	return t[0].Description
-}
-
-type byVMForEntryAtIndex struct {
-	Timelines
-	index int
-}
-
-func (s byVMForEntryAtIndex) Less(i, j int) bool {
-	a := s.Timelines[i].Entries[s.index].VM()
-	b := s.Timelines[j].Entries[s.index].VM()
-	if a == b {
-		return !s.Timelines[i].Entries[s.index].Timestamp.After(s.Timelines[j].Entries[s.index].Timestamp)
-	}
-	return a < b
-}
-
-func (t Timelines) SortByVMForEntryAtIndex(index int) {
-	sort.Sort(byVMForEntryAtIndex{t, index})
-}
-
-type byEntryAtIndex struct {
-	Timelines
-	index int
-}
-
-func (s byEntryAtIndex) Less(i, j int) bool {
-	return !s.Timelines[i].Entries[s.index].Timestamp.After(s.Timelines[j].Entries[s.index].Timestamp)
-}
-
-func (t Timelines) SortByEntryAtIndex(index int) {
-	sort.Sort(byEntryAtIndex{t, index})
-}
-
-type byEndTime struct {
-	Timelines
-}
-
-func (s byEndTime) Less(i, j int) bool {
-	return !s.Timelines[i].EndsAt().After(s.Timelines[j].EndsAt())
-}
-
-func (t Timelines) SortByEndTime() {
-	sort.Sort(byEndTime{t})
-}
-
-type byStartTime struct {
-	Timelines
-}
-
-func (s byStartTime) Less(i, j int) bool {
-	return !s.Timelines[i].BeginsAt().After(s.Timelines[j].BeginsAt())
-}
-
-func (t Timelines) SortByStartTime() {
-	sort.Sort(byStartTime{t})
-}
-
-func (t Timelines) EntryPairs(index int) EntryPairs {
-	pairs := EntryPairs{}
-	for _, timeline := range t {
-		pair, ok := timeline.EntryPair(index)
-		if ok && pair.FirstEntry.Timestamp.Before(pair.SecondEntry.Timestamp) {
-			pairs = append(pairs, pair)
-		}
-	}
-
-	return pairs
-}
-
-func (t Timelines) DTStatsSlice() DTStatsSlice {
-	dtStats := []DTStats{}
-	for i, timelinePoint := range t.Description() {
-		pairs := t.EntryPairs(i)
-		stats := pairs.DTStats()
-		stats.Name = timelinePoint.Name
-		dtStats = append(dtStats, stats)
-	}
-	return dtStats
-}
-
-func (t Timelines) StartsAfter() time.Duration {
-	min := time.Hour * 100000
-	for _, timeline := range t {
-		dt := timeline.BeginsAt().Sub(timeline.ZeroEntry.Timestamp)
-		if dt < min {
-			min = dt
-		}
-	}
-
-	return min
-}
-
-func (t Timelines) EndsAfter() time.Duration {
-	max := -time.Hour * 100000
-	for _, timeline := range t {
-		dt := timeline.EndsAt().Sub(timeline.ZeroEntry.Timestamp)
-		if dt > max {
-			max = dt
-		}
-	}
-
-	return max
 }
