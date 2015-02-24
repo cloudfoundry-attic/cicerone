@@ -184,6 +184,7 @@ func (t Timelines) DTStatsSlice() DTStatsSlice {
 
 func (t Timelines) StartsAfter() time.Duration {
 	min := time.Hour * 100000
+
 	for _, timeline := range t {
 		dt := timeline.BeginsAt().Sub(timeline.ZeroEntry.Timestamp)
 		if dt < min {
