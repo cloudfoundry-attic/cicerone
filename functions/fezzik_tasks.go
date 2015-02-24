@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/cicerone/dsl"
 	"github.com/onsi/cicerone/viz"
+	"github.com/onsi/say"
 )
 
 func FezzikTasks(e Entries, outputDir string) error {
@@ -44,7 +45,12 @@ func FezzikTasks(e Entries, outputDir string) error {
 	}
 
 	startToEndTimelines := byTaskGuid.ConstructTimelines(startToEndTimelineDescription, firstEntry)
-	plotFezzikTaskTimelinesAndHistograms(startToEndTimelines, outputDir, "end-to-end", 7)
+	completeStartToEndTimelines := startToEndTimelines.CompleteTimelines()
+	say.Println(0, say.Red("Complete Start-To-End Timelines: %d/%d (%.2f%%)\n",
+		len(completeStartToEndTimelines),
+		len(startToEndTimelines),
+		float64(len(completeStartToEndTimelines))/float64(len(startToEndTimelines))*100.0))
+	plotFezzikTaskTimelinesAndHistograms(completeStartToEndTimelines, outputDir, "end-to-end", 7)
 
 	startToScheduledTimelineDescription := TimelineDescription{
 		{"Creating", MatchMessage(`create\.creating-task`)},
@@ -57,10 +63,13 @@ func FezzikTasks(e Entries, outputDir string) error {
 	}
 
 	startToScheduledTimelines := byTaskGuid.ConstructTimelines(startToScheduledTimelineDescription, firstEntry)
-
+	completeStartToScheduledTimelines := startToScheduledTimelines.CompleteTimelines()
+	say.Println(0, say.Red("Complete Start-To-Scheduled Timelines: %d/%d (%.2f%%)\n",
+		len(completeStartToScheduledTimelines),
+		len(startToScheduledTimelines),
+		float64(len(completeStartToScheduledTimelines))/float64(len(startToScheduledTimelines))*100.0))
 	fmt.Println(startToScheduledTimelines.DTStatsSlice())
-
-	plotFezzikTaskTimelinesAndHistograms(startToScheduledTimelines, outputDir, "scheduling", 0)
+	plotFezzikTaskTimelinesAndHistograms(startToScheduledTimelines.CompleteTimelines(), outputDir, "scheduling", 0)
 
 	return nil
 }

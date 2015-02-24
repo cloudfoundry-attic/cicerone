@@ -20,6 +20,17 @@ func (t Timelines) String() string {
 	return strings.Join(s, "\n")
 }
 
+//CompleteTimelines returns the subset of Timelines that are complete.
+func (t Timelines) CompleteTimelines() Timelines {
+	subset := Timelines{}
+	for _, timeline := range t {
+		if timeline.IsComplete() {
+			subset = append(subset, timeline)
+		}
+	}
+	return subset
+}
+
 //Len returns the length of the Timelines slice
 func (t Timelines) Len() int { return len(t) }
 

@@ -87,6 +87,17 @@ func (t Timeline) EntryPair(index int) (EntryPair, bool) {
 	}, true
 }
 
+//IsComplete returns true if all events in the timeline are present
+func (t Timeline) IsComplete() bool {
+	for i := range t.Description {
+		if t.Entries[i].IsZero() {
+			return false
+		}
+	}
+
+	return true
+}
+
 //BeginsAt returns the timestamp at which the first non-zero entry in the Timeline occurs
 //Note: BeginsAt does not include the ZeroEntry.
 func (t Timeline) BeginsAt() time.Time {
