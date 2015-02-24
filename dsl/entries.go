@@ -1,6 +1,7 @@
 package dsl
 
 import (
+	"errors"
 	"fmt"
 	"io"
 )
@@ -42,18 +43,22 @@ func (e Entries) Dedupe(matcher Matcher) Entries {
 	return deduped
 }
 
-func (e Entries) ConstructTimeline(description TimelineDescription, zeroEntry Entry) Timeline {
+func (e Entries) ConstructTimeline(description TimelineDescription, zeroEntry Entry) (Timeline, error) {
 	timeline := Timeline{
 		Description: description,
 		ZeroEntry:   zeroEntry,
 	}
 
 	for _, point := range description {
-		entry, _ := e.First(point.Matcher)
-		timeline.Entries = append(timeline.Entries, entry)
+		entry, ok := e.First(point.Matcher)
+		if ok {
+			timeline.Entries = append(timeline.Entries, entry)
+		} else {
+			return Timeline{}, errors.New("unable to construct full timeline")
+		}
 	}
 
-	return timeline
+	return timeline, nil
 }
 
 func (e Entries) PairAllWith(firstPairEntry Entry, annotationGetter Getter) EntryPairs {
@@ -212,7 +217,10 @@ func (g *GroupedEntries) ConstructTimelines(description TimelineDescription, zer
 	timelines := Timelines{}
 
 	g.EachGroup(func(key interface{}, entries Entries) error {
-		timeline := entries.ConstructTimeline(description, zeroEntry)
+		timeline, err := entries.ConstructTimeline(description, zeroEntry)
+		if err != nil {
+			return nil
+		}
 		timeline.Annotation = key
 		timelines = append(timelines, timeline)
 		return nil
