@@ -8,6 +8,9 @@ import (
 	. "github.com/onsi/cicerone/dsl"
 )
 
+//NewEntryPairsHistogram plots a Historam (using n bins) of the durations in the passed in EntryPairs
+//The weight (i.e. height) of each bin is simply the number of pairs in the bin.
+//The minimum and maximum bins are computed from the minimum/maximum duration in the EntryPairs collection
 func NewEntryPairsHistogram(pairs EntryPairs, n int) *plotter.Histogram {
 	durations := pairs.Durations()
 	min := durations.Min()
@@ -16,6 +19,8 @@ func NewEntryPairsHistogram(pairs EntryPairs, n int) *plotter.Histogram {
 	return NewScaledEntryPairsHistogram(pairs, n, min, max)
 }
 
+//NewScaledEntyrPairsHistogram allows you to specify the minimum and maximum bounds of the Histogram.
+//This is useful to compare different EntryPairs on equal footing.
 func NewScaledEntryPairsHistogram(pairs EntryPairs, n int, min time.Duration, max time.Duration) *plotter.Histogram {
 	durations := pairs.Durations()
 

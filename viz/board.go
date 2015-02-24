@@ -15,15 +15,18 @@ import (
 	"code.google.com/p/plotinum/vg/vgsvg"
 )
 
+//Rect represents a rectangle
+type Rect struct {
+	X, Y, Width, Height float64
+}
+
+//SubPlot represents a plotinum plot placed within a particular unit rectangle
 type SubPlot struct {
 	Plot *plot.Plot
 	Rect Rect
 }
 
-type Rect struct {
-	X, Y, Width, Height float64
-}
-
+//ScaledRect returns a plotinum Rectangle, appropriately scaled to match the SubPlot's unit rectangle
 func (sp SubPlot) ScaledRect(width, height float64) plot.Rect {
 	return plot.Rect{
 		Min:  plot.Point{vg.Length(sp.Rect.X * width), vg.Length(sp.Rect.Y * height)},
@@ -31,6 +34,7 @@ func (sp SubPlot) ScaledRect(width, height float64) plot.Rect {
 	}
 }
 
+//NewUniformBoard returns a UniformBoard ready to accept horizontalxvertical subplots
 func NewUniformBoard(horizontal int, vertical int, padding float64) *UniformBoard {
 	return &UniformBoard{
 		Horizontal: horizontal,
@@ -39,6 +43,7 @@ func NewUniformBoard(horizontal int, vertical int, padding float64) *UniformBoar
 	}
 }
 
+//UniformBoard is a Board that can automatically place a grid of subplots
 type UniformBoard struct {
 	Board
 	Horizontal int
@@ -47,6 +52,7 @@ type UniformBoard struct {
 	counter    int
 }
 
+//AddSubPlotAt adds the passed in plotinum subplot to the UniformBoard.  The subplot is ith subplot across, and the jth plot up.
 func (b *UniformBoard) AddSubPlotAt(plot *plot.Plot, i int, j int) error {
 	if i >= b.Horizontal {
 		return fmt.Errorf("i:%d >= Horizontal:%d", i, b.Horizontal)
@@ -72,6 +78,7 @@ func (b *UniformBoard) AddSubPlotAt(plot *plot.Plot, i int, j int) error {
 	return nil
 }
 
+//AddNextSubPlot populates the next available subplot in the UniformBoard with the passed-in plot
 func (b *UniformBoard) AddNextSubPlot(plot *plot.Plot) {
 	i := b.counter % b.Horizontal
 	j := b.counter / b.Horizontal
@@ -79,10 +86,14 @@ func (b *UniformBoard) AddNextSubPlot(plot *plot.Plot) {
 	b.counter += 1
 }
 
+//Board represents a collection of SubPlots
 type Board struct {
 	SubPlots []*SubPlot
 }
 
+//AddSubPlot adds a plotinum plot as a SubPlot on the board.
+//
+//Rect represents the rectangle the SubPlot will occupy -- the entire board has width 1.0 and height 1.0 and the rectangle (called a unit rectangle) should consume some fraction of this space.
 func (b *Board) AddSubPlot(plot *plot.Plot, rect Rect) {
 	b.SubPlots = append(b.SubPlots, &SubPlot{
 		Plot: plot,
@@ -90,6 +101,8 @@ func (b *Board) AddSubPlot(plot *plot.Plot, rect Rect) {
 	})
 }
 
+//Save saves the board (i.e. all subplots, appropriately laid out) to the specified filename.
+//It basically rips off the implementation of Save in plotinum to support various file formats.
 func (b *Board) Save(width, height float64, file string) (err error) {
 	w, h := vg.Inches(width), vg.Inches(height)
 	var c interface {

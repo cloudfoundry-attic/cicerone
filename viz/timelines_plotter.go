@@ -1,58 +1,19 @@
 package viz
 
 import (
-	"fmt"
 	"image/color"
 
 	"code.google.com/p/plotinum/plot"
-	"code.google.com/p/plotinum/vg"
 
 	. "github.com/onsi/cicerone/dsl"
 )
 
-var defaultFont vg.Font
-
-func init() {
-	var err error
-	plot.DefaultFont = "Helvetica"
-	defaultFont, err = vg.MakeFont("Helvetica", 6)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-}
-
-var TimelineColors = []color.RGBA{
-	{0, 0, 0, 255},
-	{255, 0, 0, 255},
-	{0, 255, 0, 255},
-	{0, 0, 255, 255},
-	{125, 0, 0, 255},
-	{0, 125, 0, 255},
-	{0, 0, 125, 255},
-	{125, 125, 0, 255},
-	{125, 0, 125, 255},
-	{0, 125, 125, 255},
-	{125, 125, 125, 255},
-	{200, 200, 200, 255},
-	{255, 125, 0, 255},
-	{0, 125, 255, 255},
-}
-
+//TimelinesPlotter plots a stack of Timelines in the specified time range
 type TimelinesPlotter struct {
 	Timelines  Timelines
 	MinSeconds float64
 	MaxSeconds float64
 	Padding    float64
-}
-
-func PathRectangle(top vg.Length, right vg.Length, bottom vg.Length, left vg.Length) vg.Path {
-	p := vg.Path{}
-	p.Move(left, top)
-	p.Line(right, top)
-	p.Line(right, bottom)
-	p.Line(left, bottom)
-	p.Close()
-	return p
 }
 
 func NewTimelinesPlotter(timelines Timelines, minSeconds float64, maxSeconds float64) *TimelinesPlotter {
@@ -64,7 +25,7 @@ func NewTimelinesPlotter(timelines Timelines, minSeconds float64, maxSeconds flo
 	}
 }
 
-type TimelineEvent struct {
+type timelineEvent struct {
 	X     float64
 	Color color.Color
 }
@@ -73,14 +34,14 @@ func (t *TimelinesPlotter) Plot(da plot.DrawArea, p *plot.Plot) {
 	trX, trY := p.Transforms(&da)
 	y := t.Padding
 	for _, timeline := range t.Timelines {
-		events := []TimelineEvent{}
+		events := []timelineEvent{}
 		for i, entry := range timeline.Entries {
 			if entry.IsZero() {
 				continue
 			}
-			events = append(events, TimelineEvent{
+			events = append(events, timelineEvent{
 				X:     entry.Timestamp.Sub(timeline.ZeroEntry.Timestamp).Seconds(),
-				Color: TimelineColors[i],
+				Color: orderedColors[i],
 			})
 		}
 		bottom := trY(y)
@@ -89,7 +50,7 @@ func (t *TimelinesPlotter) Plot(da plot.DrawArea, p *plot.Plot) {
 			left := trX(events[i-1].X)
 			right := trX(events[i].X)
 			da.SetColor(events[i].Color)
-			da.Fill(PathRectangle(top, right, bottom, left))
+			da.Fill(pathRectangle(top, right, bottom, left))
 		}
 		y += 1.0 + t.Padding
 	}
@@ -99,8 +60,8 @@ func (t *TimelinesPlotter) Plot(da plot.DrawArea, p *plot.Plot) {
 
 	x := t.MinSeconds + dx
 	for i := 1; i < len(description); i++ {
-		da.SetColor(TimelineColors[i])
-		da.Fill(PathRectangle(trY(y+t.legendHeight()*0.5), trX(x+dx), trY(y+t.legendHeight()*0.1), trX(x)))
+		da.SetColor(orderedColors[i])
+		da.Fill(pathRectangle(trY(y+t.legendHeight()*0.5), trX(x+dx), trY(y+t.legendHeight()*0.1), trX(x)))
 		x += dx
 	}
 
