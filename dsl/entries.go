@@ -69,3 +69,7 @@ func (e Entries) WriteLagerFormatTo(w io.Writer) error {
 	}
 	return nil
 }
+
+func (e Entries) Len() int           { return len(e) }
+func (e Entries) Swap(i, j int)      { e[i], e[j] = e[j], e[i] }
+func (e Entries) Less(i, j int) bool { return e[i].Timestamp.Before(e[j].Timestamp) }
