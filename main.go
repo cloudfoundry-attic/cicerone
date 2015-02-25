@@ -19,6 +19,7 @@ func init() {
 	funcs = map[string]func(Entries, string) error{
 		"fezzik-tasks":            functions.FezzikTasks,
 		"vizzini-parallel-garden": functions.VizziniParallelGarden,
+		"analyze-cf-pushes":       functions.AnalyzeCFPushes,
 	}
 
 	flag.StringVar(&outputDir, "output-dir", ".", "Output Directory to store plots")

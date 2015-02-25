@@ -72,7 +72,7 @@ func (t Timelines) EntryPairs(index int) EntryPairs {
 	pairs := EntryPairs{}
 	for _, timeline := range t {
 		pair, ok := timeline.EntryPair(index)
-		if ok && pair.FirstEntry.Timestamp.Before(pair.SecondEntry.Timestamp) {
+		if ok && !pair.FirstEntry.Timestamp.After(pair.SecondEntry.Timestamp) {
 			pairs = append(pairs, pair)
 		}
 	}
