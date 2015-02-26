@@ -1,6 +1,9 @@
 package dsl
 
 import (
+	"encoding/csv"
+	"fmt"
+	"io"
 	"math"
 	"sort"
 	"strings"
@@ -118,6 +121,31 @@ func (t Timelines) EndsAfter() time.Duration {
 	}
 
 	return max
+}
+
+//ToCSV generates a CSV file from a timeline
+func (t Timelines) ToCSV(w io.Writer) {
+	csvWriter := csv.NewWriter(w)
+
+	headers := []string{"id"}
+	for _, desc := range t.Description() {
+		headers = append(headers, desc.Name)
+	}
+
+	csvWriter.Write(headers)
+
+	for _, timeline := range t {
+		row := []string{fmt.Sprintf("%s", timeline.Annotation)}
+		for i := range t.Description() {
+			pair, found := timeline.EntryPair(i)
+			if found {
+				row = append(row, fmt.Sprintf("%.3f", pair.DT().Seconds()))
+			} else {
+				row = append(row, "0")
+			}
+		}
+		w.Write(row)
+	}
 }
 
 // Sorters (private)
