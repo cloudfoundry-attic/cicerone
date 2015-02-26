@@ -4,22 +4,25 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"sort"
+	"strings"
 
-	. "github.com/onsi/cicerone/dsl"
-	"github.com/onsi/cicerone/functions"
-	"github.com/pivotal-golang/lager/chug"
+	"github.com/onsi/cicerone/commands"
+	"github.com/onsi/say"
 )
 
-var funcs map[string]func(Entries, string) error
+type Command interface {
+	Usage() string
+	Description() string
+	Command(outputDir string, args ...string) error
+}
 
 var outputDir string
+var comms []Command
 
 func init() {
-	funcs = map[string]func(Entries, string) error{
-		"fezzik-tasks":            functions.FezzikTasks,
-		"vizzini-parallel-garden": functions.VizziniParallelGarden,
-		"analyze-cf-pushes":       functions.AnalyzeCFPushes,
+	comms = []Command{
+		&commands.FezzikTasks{},
+		&commands.AnalyzeCFPushes{},
 	}
 
 	flag.StringVar(&outputDir, "output-dir", ".", "Output Directory to store plots")
@@ -27,66 +30,38 @@ func init() {
 }
 
 func main() {
-	if len(flag.Args()) != 2 {
-		PrintUsage()
-		os.Exit(1)
+	if len(flag.Args()) == 0 {
+		PrintUsageAndExit()
 	}
 
-	f, ok := funcs[flag.Args()[0]]
+	args := flag.Args()
 
-	if !ok {
-		PrintUsage()
-		os.Exit(1)
-	}
+	for _, command := range comms {
+		commandName := strings.Split(command.Usage(), " ")[0]
+		if commandName == args[0] {
+			err := command.Command(outputDir, args[1:]...)
 
-	entries, err := LoadEntries(flag.Args()[1])
-	if err != nil {
-		fmt.Printf("Failed to load %s\n", flag.Args()[1])
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
+			if err != nil {
+				fmt.Printf("Command %s failed", commandName)
+				fmt.Println(err.Error())
+				os.Exit(1)
+			}
 
-	err = f(entries, outputDir)
-	if err != nil {
-		fmt.Printf("Function %s failed", flag.Args()[0])
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-
-	os.Exit(0)
-}
-
-func PrintUsage() {
-	fmt.Println("log_measure FUNCTION LOG_FILE")
-	fmt.Println("-----------------------------")
-	fmt.Println("Available functions:")
-	functionNames := []string{}
-	for k := range funcs {
-		functionNames = append(functionNames, k)
-	}
-	sort.Strings(functionNames)
-	for _, name := range functionNames {
-		fmt.Println("\t" + name)
-	}
-}
-
-func LoadEntries(filename string) (Entries, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	out := make(chan chug.Entry)
-	go chug.Chug(file, out)
-
-	entries := Entries{}
-	for chugEntry := range out {
-		entry, err := NewEntry(chugEntry)
-		if err != nil {
-			continue
+			os.Exit(0)
 		}
-		entries = append(entries, entry)
 	}
 
-	return entries, nil
+	PrintUsageAndExit()
+}
+
+func PrintUsageAndExit() {
+	fmt.Println("cicerone COMMAND ...")
+	fmt.Println("--------------------")
+	fmt.Println("Available commands:")
+	for _, command := range comms {
+		say.Println(1, say.Green(command.Usage()))
+		say.Println(2, command.Description())
+
+	}
+	os.Exit(1)
 }

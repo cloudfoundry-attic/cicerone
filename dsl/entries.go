@@ -46,7 +46,7 @@ func (e Entries) ConstructTimeline(description TimelineDescription, zeroEntry En
 //GroupBy groups all Entries by the passed in Getter it returns a GroupedEntries object
 //The values returned by the Getter correpond to the Keys in the returned GroupedEntries object
 func (e Entries) GroupBy(getter Getter) *GroupedEntries {
-	groups := newGroupedEntries()
+	groups := NewGroupedEntries()
 
 	for _, entry := range e {
 		key, ok := getter.Get(entry)

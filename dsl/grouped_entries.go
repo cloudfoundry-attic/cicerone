@@ -18,7 +18,8 @@ type GroupedEntries struct {
 	lookup  map[interface{}]int
 }
 
-func newGroupedEntries() *GroupedEntries {
+//NewGroupedEntries initializes a new GroupedEntries
+func NewGroupedEntries() *GroupedEntries {
 	return &GroupedEntries{
 		lookup: map[interface{}]int{},
 	}
@@ -71,7 +72,7 @@ func (g *GroupedEntries) EachGroup(f func(interface{}, Entries) error) error {
 //
 //are identical.
 func (g *GroupedEntries) Filter(matcher Matcher) *GroupedEntries {
-	filteredGroups := newGroupedEntries()
+	filteredGroups := NewGroupedEntries()
 	g.EachGroup(func(key interface{}, entries Entries) error {
 		filtered := entries.Filter(matcher)
 		if len(filtered) > 0 {

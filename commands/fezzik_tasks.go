@@ -1,18 +1,43 @@
-package functions
+package commands
 
 import (
 	"fmt"
-	"image/color"
 	"path/filepath"
 
 	"code.google.com/p/plotinum/plot"
 
+	"github.com/onsi/cicerone/converters"
 	. "github.com/onsi/cicerone/dsl"
 	"github.com/onsi/cicerone/viz"
 	"github.com/onsi/say"
 )
 
-func FezzikTasks(e Entries, outputDir string) error {
+type FezzikTasks struct{}
+
+func (f *FezzikTasks) Usage() string {
+	return "fezzik-tasks FEZZIK_PAPERTRAIL_LOGS"
+}
+
+func (f *FezzikTasks) Description() string {
+	return `
+Takes a papertrail log file that covers a Fezzik Task run
+and generates timeline plots for all Tasks and histograms
+for the durations of key events.
+
+e.g. fezzik-tasks ~/workspace/performance/10-cells/fezzik-40xtasks/fezzik-40xtasks-optimization-4-better-logs.log
+`
+}
+
+func (f *FezzikTasks) Command(outputDir string, args ...string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("First argument must be a papertrail logs file")
+	}
+
+	e, err := converters.EntriesFromPapertrailFile(args[0])
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("Receptors that handled creates:", e.Filter(MatchMessage(`create\.creating-task`)).GroupBy(GetVM).Keys)
 	fmt.Println("Receptors that handled resolves:", e.Filter(MatchMessage(`resolved-task`)).GroupBy(GetVM).Keys)
 
@@ -75,29 +100,7 @@ func FezzikTasks(e Entries, outputDir string) error {
 }
 
 func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, outputDir string, prefix string, vmEventIndex int) {
-	histograms := viz.NewUniformBoard(len(timelines.Description()), 2, 0.01)
-
-	for i, timelinePoint := range timelines.Description() {
-		entryPairs := timelines.EntryPairs(i)
-		p, _ := plot.New()
-		p.Title.Text = timelinePoint.Name
-		h := viz.NewEntryPairsHistogram(entryPairs, 30)
-		h.Color = color.RGBA{0, 0, 255, 255}
-		p.Add(h)
-		histograms.AddNextSubPlot(p)
-	}
-
-	for i, timelinePoint := range timelines.Description() {
-		entryPairs := timelines.EntryPairs(i)
-		p, _ := plot.New()
-		p.Title.Text = timelinePoint.Name
-		h := viz.NewScaledEntryPairsHistogram(entryPairs, 30, 0, timelines.EndsAfter())
-		h.Color = color.RGBA{255, 0, 0, 255}
-		p.Add(h)
-		histograms.AddNextSubPlot(p)
-	}
-	fmt.Println(filepath.Join(outputDir, prefix+"-histograms.png"))
-	histograms.Save(3.0*float64(len(timelines.Description())), 6.0, filepath.Join(outputDir, prefix+"-histograms.png"))
+	plotTimelinesHistogramsBoard(timelines, filepath.Join(outputDir, prefix+"-histograms.png"))
 
 	timelines.SortByEndTime()
 	timelineBoard := &viz.Board{}

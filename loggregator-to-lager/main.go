@@ -17,6 +17,23 @@ import (
 	. "github.com/onsi/cicerone/dsl"
 )
 
+/*
+
+Next Steps:
+- add converters to cicerone to support:
+	- parsing papertrail logs => cicerone entries
+	- parsing CF logs => cicerone entries
+	- unifying bosh logs (just point it a the root of a tree and give it min and max timestamps) => cicerone entries
+	- cicerone entries can get turned into lager entries losslessly and vice versa.
+- generalize cicerone's functions: they just take args and call converters, etc...
+- move this out of cicerone and tailor it to handle extracting logs from the CF Push experiment:
+	- in particular, the identifier has to be the APP_GUID which should be in one of the logs and is **NOT** the name of the file
+- when unifying the bosh logs we need a way to encode the VM - a la papertrail, again this could be a standalone one-off
+	- fwiw: --min=1424820500 --max=1424828000
+
+Then, teach Cicerone how to ingest these bosh logs then dive into it...
+*/
+
 var re *regexp.Regexp
 
 func init() {
