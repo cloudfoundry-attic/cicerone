@@ -23,6 +23,7 @@ func init() {
 	comms = []Command{
 		&commands.FezzikTasks{},
 		&commands.AnalyzeCFPushes{},
+		&commands.SlurpBosh{},
 	}
 
 	flag.StringVar(&outputDir, "output-dir", ".", "Output Directory to store plots")
