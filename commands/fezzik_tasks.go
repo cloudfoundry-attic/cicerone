@@ -102,10 +102,7 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, outputDir string, prefix string, vmEventIndex int) {
 	plotTimelinesHistogramsBoard(timelines, filepath.Join(outputDir, prefix+"-histograms.png"))
 
-	correlationBoard, err := viz.NewCorrelationBoard(timelines)
-	if err != nil {
-		fmt.Println("Failed to make correlation board", err.Error())
-	}
+	correlationBoard, _ := viz.NewCorrelationBoard(timelines)
 	correlationBoard.Save(24.0, 24.0, filepath.Join(outputDir, prefix+"-correlation.png"))
 
 	timelines.SortByEndTime()

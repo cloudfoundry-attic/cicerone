@@ -69,6 +69,7 @@ func (t Timelines) SortByStartTime() {
 }
 
 //EntryPairs fetches the EntryPair at the passed-in index for each Timeline then returns the corresponding list of EntryPairs
+//It filters out EntryPairs with negative DTs.
 //
 //See the documentation for timeline.EntryPair for more details
 func (t Timelines) EntryPairs(index int) EntryPairs {
@@ -81,6 +82,26 @@ func (t Timelines) EntryPairs(index int) EntryPairs {
 	}
 
 	return pairs
+}
+
+//MatchedEntryPairs fetches two EntryPairs, one for each of the passed-in indices for each Timeline.
+//It ensures that each entry in the first EntryPairs list corresponds to the entry at the same index in the second list.
+//It alos ensures that no entries with negative DTs are in either list.
+//
+//See the documentation for timeline.EntryPair for more details
+func (t Timelines) MatchedEntryPairs(i, j int) (EntryPairs, EntryPairs) {
+	iPairs := EntryPairs{}
+	jPairs := EntryPairs{}
+	for _, timeline := range t {
+		pairI, okI := timeline.EntryPair(i)
+		pairJ, okJ := timeline.EntryPair(j)
+		if okI && okJ && !pairI.FirstEntry.Timestamp.After(pairI.SecondEntry.Timestamp) && !pairJ.FirstEntry.Timestamp.After(pairJ.SecondEntry.Timestamp) {
+			iPairs = append(iPairs, pairI)
+			jPairs = append(jPairs, pairJ)
+		}
+	}
+
+	return iPairs, jPairs
 }
 
 //DTStatsSlice returns a collection of DTStats -- one for each TimelinePoint in the TimelineDescription

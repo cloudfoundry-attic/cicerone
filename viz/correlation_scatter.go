@@ -19,7 +19,7 @@ func newCorrelationScatter(xDurations Durations, yDurations Durations, c color.C
 	}
 	s.GlyphStyle = plot.GlyphStyle{
 		Color:  c,
-		Radius: 3,
+		Radius: 2,
 		Shape:  plot.CircleGlyph{},
 	}
 	return s, nil
@@ -31,15 +31,20 @@ func NewCorrelationBoard(timelines Timelines) (*UniformBoard, error) {
 	timelines = timelines.CompleteTimelines()
 
 	size := len(timelines.Description())
+
 	board := NewUniformBoard(size, size, 0.01)
 	for i := 0; i < size; i++ {
-		xDurations := timelines.EntryPairs(i).Durations()
-		twentyPercent := int(float64(len(xDurations)) * 0.2)
-		eightyPercent := len(xDurations) - twentyPercent
 		for j := 0; j < size; j++ {
 			p, _ := plot.New()
 
-			yDurations := timelines.EntryPairs(j).Durations()
+			iPairs, jPairs := timelines.MatchedEntryPairs(i, j)
+
+			xDurations := iPairs.Durations()
+			yDurations := jPairs.Durations()
+
+			twentyPercent := int(float64(len(xDurations)) * 0.2)
+			eightyPercent := len(xDurations) - twentyPercent
+
 			s, err := newCorrelationScatter(xDurations[:twentyPercent], yDurations[:twentyPercent], color.RGBA{0, 0, 255, 255})
 			if err != nil {
 				return nil, err
