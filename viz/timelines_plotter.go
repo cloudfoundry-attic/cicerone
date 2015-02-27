@@ -65,14 +65,14 @@ func (t *TimelinesPlotter) Plot(da plot.DrawArea, p *plot.Plot) {
 		x += dx
 	}
 
-	textStyle := plot.TextStyle{
-		Color: color.Black,
-		Font:  defaultFont,
-	}
-
 	x = t.MinSeconds + dx
 
 	for i := 0; i < len(description); i++ {
+		textStyle := plot.TextStyle{
+			Color: orderedColors[i],
+			Font:  defaultFont,
+		}
+
 		da.FillText(textStyle, trX(x), trY(y+t.legendHeight()*0.6), -0.5, 0, description[i].Name)
 		x += dx
 	}

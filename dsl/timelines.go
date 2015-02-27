@@ -144,7 +144,7 @@ func (t Timelines) ToCSV(w io.Writer) {
 				row = append(row, "0")
 			}
 		}
-		w.Write(row)
+		csvWriter.Write(row)
 	}
 }
 
