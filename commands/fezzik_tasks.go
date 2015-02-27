@@ -24,7 +24,7 @@ Takes a papertrail log file that covers a Fezzik Task run
 and generates timeline plots for all Tasks and histograms
 for the durations of key events.
 
-e.g. fezzik-tasks ~/workspace/performance/10-cells/fezzik-40xtasks/fezzik-40xtasks-optimization-4-better-logs.log
+e.g. fezzik-tasks ~/workspace/performance/10-cells/fezzik-40xtasks/optimization-4-better-logs.log
 `
 }
 
@@ -75,7 +75,7 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 		len(completeStartToEndTimelines),
 		len(startToEndTimelines),
 		float64(len(completeStartToEndTimelines))/float64(len(startToEndTimelines))*100.0))
-	plotFezzikTaskTimelinesAndHistograms(completeStartToEndTimelines, outputDir, "end-to-end", 7)
+	plotFezzikTaskTimelinesAndHistograms(startToEndTimelines, outputDir, "end-to-end", 7)
 
 	startToScheduledTimelineDescription := TimelineDescription{
 		{"Creating", MatchMessage(`create\.creating-task`)},
@@ -94,16 +94,20 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 		len(startToScheduledTimelines),
 		float64(len(completeStartToScheduledTimelines))/float64(len(startToScheduledTimelines))*100.0))
 	fmt.Println(startToScheduledTimelines.DTStatsSlice())
-	plotFezzikTaskTimelinesAndHistograms(startToScheduledTimelines.CompleteTimelines(), outputDir, "scheduling", 0)
+	plotFezzikTaskTimelinesAndHistograms(startToScheduledTimelines, outputDir, "scheduling", 0)
 
 	return nil
 }
 
 func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, outputDir string, prefix string, vmEventIndex int) {
-	plotTimelinesHistogramsBoard(timelines, filepath.Join(outputDir, prefix+"-histograms.png"))
+	histograms := viz.NewEntryPairsHistogramBoard(timelines)
+	histograms.Save(3.0*float64(len(timelines.Description())), 6.0, filepath.Join(outputDir, prefix+"-histograms.png"))
 
 	correlationBoard, _ := viz.NewCorrelationBoard(timelines)
-	correlationBoard.Save(24.0, 24.0, filepath.Join(outputDir, prefix+"-correlation.png"))
+	err := correlationBoard.Save(24.0, 24.0, filepath.Join(outputDir, prefix+"-correlation.png"))
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 
 	timelines.SortByEndTime()
 	timelineBoard := &viz.Board{}

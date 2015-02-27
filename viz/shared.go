@@ -19,7 +19,7 @@ func init() {
 	}
 }
 
-var orderedColors = []color.RGBA{
+var OrderedColors = []color.RGBA{
 	{0, 0, 0, 255},
 	{255, 0, 0, 255},
 	{0, 200, 0, 255},

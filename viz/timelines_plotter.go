@@ -41,7 +41,7 @@ func (t *TimelinesPlotter) Plot(da plot.DrawArea, p *plot.Plot) {
 			}
 			events = append(events, timelineEvent{
 				X:     entry.Timestamp.Sub(timeline.ZeroEntry.Timestamp).Seconds(),
-				Color: orderedColors[i],
+				Color: OrderedColors[i],
 			})
 		}
 		bottom := trY(y)
@@ -60,7 +60,7 @@ func (t *TimelinesPlotter) Plot(da plot.DrawArea, p *plot.Plot) {
 
 	x := t.MinSeconds + dx
 	for i := 1; i < len(description); i++ {
-		da.SetColor(orderedColors[i])
+		da.SetColor(OrderedColors[i])
 		da.Fill(pathRectangle(trY(y+t.legendHeight()*0.5), trX(x+dx), trY(y+t.legendHeight()*0.1), trX(x)))
 		x += dx
 	}
@@ -69,7 +69,7 @@ func (t *TimelinesPlotter) Plot(da plot.DrawArea, p *plot.Plot) {
 
 	for i := 0; i < len(description); i++ {
 		textStyle := plot.TextStyle{
-			Color: orderedColors[i],
+			Color: OrderedColors[i],
 			Font:  defaultFont,
 		}
 

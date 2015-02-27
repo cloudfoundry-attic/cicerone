@@ -116,7 +116,8 @@ func getApplicationGuid(e Entries) (string, bool) {
 func plotCFPushesTimelinesAndHistograms(timelines Timelines, outputDir string, prefix string) {
 	timelines.SortByStartTime()
 
-	plotTimelinesHistogramsBoard(timelines, filepath.Join(outputDir, prefix+"-histograms.png"))
+	histograms := viz.NewEntryPairsHistogramBoard(timelines)
+	histograms.Save(3.0*float64(len(timelines.Description())), 6.0, filepath.Join(outputDir, prefix+"-histograms.png"))
 
 	correlationBoard, _ := viz.NewCorrelationBoard(timelines)
 	correlationBoard.Save(24.0, 24.0, filepath.Join(outputDir, prefix+"-correlation.png"))

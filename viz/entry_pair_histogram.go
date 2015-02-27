@@ -1,8 +1,10 @@
 package viz
 
 import (
+	"image/color"
 	"time"
 
+	"code.google.com/p/plotinum/plot"
 	"code.google.com/p/plotinum/plotter"
 
 	. "github.com/onsi/cicerone/dsl"
@@ -44,4 +46,42 @@ func NewScaledEntryPairsHistogram(pairs EntryPairs, n int, min time.Duration, ma
 		Bins:      bins,
 		LineStyle: plotter.DefaultLineStyle,
 	}
+}
+
+func NewEntryPairsHistogramBoard(timelines Timelines) *UniformBoard {
+	histograms := NewUniformBoard(len(timelines.Description()), 2, 0.01)
+
+	for i, timelinePoint := range timelines.Description() {
+		entryPairs := timelines.EntryPairs(i)
+		p, _ := plot.New()
+		p.Title.Text = timelinePoint.Name
+		p.Title.Color = OrderedColors[i]
+		h := NewEntryPairsHistogram(entryPairs, 30)
+		h.Color = color.RGBA{0, 0, 0, 255}
+		p.Add(h)
+
+		twentyPercent := int(float64(len(entryPairs)) * 0.2)
+		h = NewEntryPairsHistogram(entryPairs[:twentyPercent], 30)
+		h.Color = color.RGBA{0, 0, 255, 255}
+		p.Add(h)
+
+		h = NewEntryPairsHistogram(entryPairs[len(entryPairs)-twentyPercent:], 30)
+		h.Color = color.RGBA{255, 0, 0, 255}
+		p.Add(h)
+
+		histograms.AddNextSubPlot(p)
+	}
+
+	for i, timelinePoint := range timelines.Description() {
+		entryPairs := timelines.EntryPairs(i)
+		p, _ := plot.New()
+		p.Title.Text = timelinePoint.Name
+		p.Title.Color = OrderedColors[i]
+		h := NewScaledEntryPairsHistogram(entryPairs, 30, 0, timelines.EndsAfter())
+		h.Color = color.RGBA{0, 0, 0, 255}
+		p.Add(h)
+		histograms.AddNextSubPlot(p)
+	}
+
+	return histograms
 }

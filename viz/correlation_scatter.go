@@ -64,9 +64,9 @@ func NewCorrelationBoard(timelines Timelines) (*UniformBoard, error) {
 			p.Add(s)
 
 			p.X.Label.Text = timelines.Description()[i].Name
-			p.X.Label.Color = orderedColors[i]
+			p.X.Label.Color = OrderedColors[i]
 			p.Y.Label.Text = timelines.Description()[j].Name
-			p.Y.Label.Color = orderedColors[j]
+			p.Y.Label.Color = OrderedColors[j]
 			board.AddSubPlotAt(p, i, j)
 		}
 	}
