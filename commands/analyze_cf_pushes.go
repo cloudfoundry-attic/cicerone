@@ -50,7 +50,7 @@ func (f *AnalyzeCFPushes) Command(outputDir string, args ...string) error {
 	firstEntry := byApplication.Entries[0][0]
 
 	timelineDescription := TimelineDescription{
-		{"Created", MatchMessage(`Updated app with guid .* \(\{"environment_json"`)},
+		{"Created", MatchMessage(`Updated app with guid .* \(\{"diego"=>true`)},
 		{"CC-Says-Start", MatchMessage(`Updated app with guid .* \(\{"state"=>"STARTED"\}\)`)},
 		{"Creating-Stg", And(MatchMessage(`Creating container`), MatchJob("STG"))},
 		{"Created-Stg", And(MatchMessage(`Successfully created container`), MatchJob("STG"))},
