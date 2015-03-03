@@ -33,7 +33,7 @@ cf logs --recent output of cf push.
 Analyze-cf-pushes then generates timeline plots for each application and histograms
 for the durations of key events.
 
-e.g. analyze-cf-pushes ~/workspace/performance/10-cells/cf-pushes/unoptimized/raw-pushes/**/push*
+e.g. analyze-cf-pushes ~/workspace/performance/10-cells/cf-pushes/optimization-1-no-logs/raw-pushes/**/log*
 `
 }
 
@@ -50,7 +50,7 @@ func (f *AnalyzeCFPushes) Command(outputDir string, args ...string) error {
 	firstEntry := byApplication.Entries[0][0]
 
 	timelineDescription := TimelineDescription{
-		{"Creating", MatchMessage(`Created app with guid`)},
+		{"Created", MatchMessage(`Updated app with guid .* \(\{"environment_json"`)},
 		{"CC-Says-Start", MatchMessage(`Updated app with guid .* \(\{"state"=>"STARTED"\}\)`)},
 		{"Creating-Stg", And(MatchMessage(`Creating container`), MatchJob("STG"))},
 		{"Created-Stg", And(MatchMessage(`Successfully created container`), MatchJob("STG"))},
