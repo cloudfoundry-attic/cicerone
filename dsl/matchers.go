@@ -2,6 +2,7 @@ package dsl
 
 import (
 	"regexp"
+	"time"
 
 	"github.com/pivotal-golang/lager"
 )
@@ -86,31 +87,50 @@ func MatchVM(vm string) Matcher {
 	return RegExpMatcher(GetVM, vm)
 }
 
-//MatchVM matches true if the Entry's Job matches the passed-in string (interpreted as a regular expression)
+//MatchJob matches true if the Entry's Job matches the passed-in string (interpreted as a regular expression)
 func MatchJob(job string) Matcher {
 	return RegExpMatcher(GetJob, job)
 }
 
-//MatchVM matches true if the Entry's Source matches the passed-in string (interpreted as a regular expression)
+//MatchSource matches true if the Entry's Source matches the passed-in string (interpreted as a regular expression)
 func MatchSource(source string) Matcher {
 	return RegExpMatcher(GetSource, source)
 }
 
-//MatchVM matches true if the Entry's Message matches the passed-in string (interpreted as a regular expression)
+//MatchMessage matches true if the Entry's Message matches the passed-in string (interpreted as a regular expression)
 func MatchMessage(message string) Matcher {
 	return RegExpMatcher(GetMessage, message)
 }
 
-//MatchVM matches true if the Entry's Index matches the passed-in integer
+//MatchSession matches true if the Entry's Session matches the passed-in string (interpreted as a regular expression)
+func MatchSession(session string) Matcher {
+	return RegExpMatcher(GetSession, session)
+}
+
+//MatchIndex matches true if the Entry's Index matches the passed-in integer
 func MatchIndex(index int) Matcher {
 	return MatcherFunc(func(entry Entry) bool {
 		return entry.Index == index
 	})
 }
 
-//MatchVM matches true if the Entry's LogLevel matches the passed-in lager.LogLevel
+//MatchLogLEvel matches true if the Entry's LogLevel matches the passed-in lager.LogLevel
 func MatchLogLevel(logLevel lager.LogLevel) Matcher {
 	return MatcherFunc(func(entry Entry) bool {
 		return entry.LogLevel == logLevel
+	})
+}
+
+//MatchAfter returns true if the Entry's timestamp is after the passed-in time
+func MatchAfter(t time.Time) Matcher {
+	return MatcherFunc(func(entry Entry) bool {
+		return entry.Timestamp.After(t)
+	})
+}
+
+//MatchBefore returns true if hte Entry's timestamp is before the passed-in time
+func MatchBefore(t time.Time) Matcher {
+	return MatcherFunc(func(entry Entry) bool {
+		return entry.Timestamp.Before(t)
 	})
 }

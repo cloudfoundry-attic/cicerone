@@ -36,7 +36,7 @@ func NewEntryFromChugLog(chugEntry chug.Entry) (Entry, error) {
 	encodedIndex, ok := entry.Data["cicerone-index"]
 	if ok {
 		delete(entry.Data, "cicerone-index")
-		entry.Index = encodedIndex.(int)
+		entry.Index = int(encodedIndex.(float64))
 	}
 
 	return entry, nil

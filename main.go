@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/onsi/cicerone/commands"
@@ -20,10 +21,17 @@ var outputDir string
 var comms []Command
 
 func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	comms = []Command{
 		&commands.FezzikTasks{},
 		&commands.AnalyzeCFPushes{},
 		&commands.SlurpBosh{},
+		&commands.AnalyzeConvergenceForMissingCells{},
+
+		//one-offs
+		// &commands.SlurpDisappearingCells{},
+		// &commands.AnalyzeDisappearingCells{},
+
 	}
 
 	flag.StringVar(&outputDir, "output-dir", ".", "Output Directory to store plots")

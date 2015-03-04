@@ -40,9 +40,14 @@ var GetSource = GetterFunc(func(entry Entry) (interface{}, bool) {
 	return entry.Source, true
 })
 
-//GetSource returns the message associated with an entry
+//GetMessage returns the message associated with an entry
 var GetMessage = GetterFunc(func(entry Entry) (interface{}, bool) {
 	return entry.Message, true
+})
+
+//GetSession returns the session associated with an entry
+var GetSession = GetterFunc(func(entry Entry) (interface{}, bool) {
+	return entry.Session, true
 })
 
 //DataGetter returns a Getter that can extract data from an Entry's Data field
