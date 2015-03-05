@@ -155,7 +155,36 @@ func (a *AnalyzeDisappearingCells) exploreAuctions(event disappearingCellEvent, 
 	successfulAuctions, _ := DataGetter("successful-lrp-start-auctions").Get(scheduledEntry)
 	failedAuctions, _ := DataGetter("failed-lrp-start-auctions").Get(scheduledEntry)
 
-	say.Println(2, "%s after cell-missing - %s cells: %s succeeded, %s failed in %s", firstEntry.Timestamp.Sub(event.ConvergerActionTimestamp), say.Green("%.0f", numStatesFetched), say.Green("%.0f", successfulAuctions), say.Red("%.0f", failedAuctions), dt)
+	say.Println(2, "Ran auction %s after cell-missing event - fetched state from %s cells: %s succeeded, %s failed in %s", firstEntry.Timestamp.Sub(event.ConvergerActionTimestamp), say.Green("%.0f", numStatesFetched), say.Green("%.0f", successfulAuctions), say.Red("%.0f", failedAuctions), dt)
+
+	logsDuringAuction := logsInWindow.Filter(MatchBefore(scheduledEntry.Timestamp))
+
+	groupedByVMs := logsDuringAuction.Filter(MatchMessage("auction-delegate")).GroupBy(GetVM)
+
+	groupedByVMs.EachGroup(func(key interface{}, entries Entries) error {
+		providing, _ := entries.First(MatchMessage("auction-state.providing"))
+		provided, _ := entries.First(MatchMessage("provided"))
+		allocating, _ := entries.First(MatchMessage("lrp-allocate-instances.allocating"))
+		allocated, _ := entries.First(MatchMessage("lrp-allocate-instances.allocated"))
+
+		timeToProvide := provided.Timestamp.Sub(providing.Timestamp)
+		placeholder, _ := DataGetter("available-resources.Containers").Get(provided)
+		availableContainers := placeholder.(float64)
+		placeholder, _ = DataGetter("available-resources.MemoryMB").Get(provided)
+		availableMemory := placeholder.(float64)
+
+		say.Println(2, "%s: Provided data in %s.  Has %.0f containers, %.0f memory available", key, timeToProvide, availableContainers, availableMemory)
+
+		if allocating.IsZero() {
+			say.Println(3, say.Red("nothing was allocated to this cell"))
+		} else {
+			placeholder, _ = DataGetter("lrp-starts").Get(allocating)
+			numLRPs := placeholder.(float64)
+			say.Println(3, "Allocated %.0f LRPs (took %s to allocate) => end up with %.0f containers available", numLRPs, allocated.Timestamp.Sub(allocating.Timestamp), availableContainers-numLRPs)
+		}
+
+		return nil
+	})
 
 	return nil
 }

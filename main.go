@@ -31,7 +31,6 @@ func init() {
 		//one-offs
 		// &commands.SlurpDisappearingCells{},
 		// &commands.AnalyzeDisappearingCells{},
-
 	}
 
 	flag.StringVar(&outputDir, "output-dir", ".", "Output Directory to store plots")
