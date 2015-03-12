@@ -20,7 +20,7 @@ func init() {
 	boshTreeSubDirRegExp = regexp.MustCompile(`([a-zA-Z0-9_-]+)-(\d+)`)
 }
 
-// EntriesFromBoshDump takes a path to a directory that looks like:
+// EntriesFromBOSHTree takes a path to a directory that looks like:
 //
 // /JOB-INDEX
 //           /PROCESS
@@ -34,24 +34,28 @@ func init() {
 //
 // And slurps the whole bunch in, extracting and annotating Cicerone entries as it goes.
 //
-// If provided, min-time and max-time are used to limit the window of time in which to import logs
+// min-time and max-time are used to limit the window of time in which to import logs
 // The final set of logs are orderd by time (which likely varies from box to box!)
 //
 // Job corresponds to the bosh job extracted from the directory
 // Index corresponds to the bosh index extracted from the directory
 func EntriesFromBOSHTree(path string, minTime time.Time, maxTime time.Time) (Entries, error) {
-	entries := Entries{}
+	entries := map[string]map[string]map[string]Entries{}
 
 	infos, err := ioutil.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
 
+	vmEntriesChans := map[string]chan map[string]map[string]Entries{}
+	vmErrorChans := map[string]chan error{}
 	for _, info := range infos {
 		if !info.IsDir() {
 			continue
 		}
-		matches := boshTreeSubDirRegExp.FindStringSubmatch(info.Name())
+
+		vm := info.Name()
+		matches := boshTreeSubDirRegExp.FindStringSubmatch(vm)
 		if matches == nil {
 			continue
 		}
@@ -59,58 +63,94 @@ func EntriesFromBOSHTree(path string, minTime time.Time, maxTime time.Time) (Ent
 		job := matches[1]
 		index, _ := strconv.Atoi(matches[2])
 
-		say.Println(0, say.Green("%s/%d", job, index))
+		vmEntriesChans[vm] = make(chan map[string]map[string]Entries, 1)
+		vmErrorChans[vm] = make(chan error, 1)
+		go func(p string, min, max time.Time, j string, i int, entriesChan chan map[string]map[string]Entries, errChan chan error) {
+			e, err := entriesFromBOSHProcesses(p, min, max, j, i)
+			if err != nil {
+				errChan <- err
+			} else {
+				entriesChan <- e
+			}
+		}(filepath.Join(path, vm), minTime, maxTime, job, index, vmEntriesChans[vm], vmErrorChans[vm])
+	}
 
-		e, err := entriesFromBOSHProcesses(filepath.Join(path, info.Name()), minTime, maxTime, job, index)
-		if err != nil {
+	for vm := range vmEntriesChans {
+		select {
+		case e := <-vmEntriesChans[vm]:
+			entries[vm] = e
+		case err := <-vmErrorChans[vm]:
 			return nil, err
-		}
-
-		entries = append(entries, e...)
-
-		if len(e) == 0 {
-			say.Println(1, say.Red("%s/%d: EMPTY", job, index))
 		}
 	}
 
-	say.Println(0, "Sorting %d lines", len(entries))
+	allEntries := Entries{}
+	for vm, vmEntries := range entries {
+		say.Println(0, say.Green(vm))
+		for process, processEntries := range vmEntries {
+			say.Println(1, say.Yellow(process))
+			for file, fileEntries := range processEntries {
+				lineCountMessage := ""
+				if len(fileEntries) == 0 {
+					lineCountMessage = say.Red("EMPTY")
+				} else {
+					lineCountMessage = say.Green("%d", len(fileEntries))
+				}
+				say.Println(2, "%s %s", file, lineCountMessage)
+				allEntries = append(allEntries, fileEntries...)
+			}
+		}
+	}
 
-	sort.Sort(entries)
+	say.Println(0, "Sorting %d lines", len(allEntries))
 
-	return entries, nil
+	sort.Sort(allEntries)
+
+	return allEntries, nil
 }
 
-func entriesFromBOSHProcesses(path string, minTime time.Time, maxTime time.Time, job string, index int) (Entries, error) {
-	entries := Entries{}
+func entriesFromBOSHProcesses(path string, minTime time.Time, maxTime time.Time, job string, index int) (map[string]map[string]Entries, error) {
+	entries := map[string]map[string]Entries{}
 
 	infos, err := ioutil.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
 
+	processEntriesChans := map[string]chan map[string]Entries{}
+	processErrorChans := map[string]chan error{}
 	for _, info := range infos {
 		if !info.IsDir() {
 			continue
 		}
 
-		say.Println(1, say.Yellow(info.Name()))
+		process := info.Name()
+		processEntriesChans[process] = make(chan map[string]Entries, 1)
+		processErrorChans[process] = make(chan error, 1)
+		go func(p string, min, max time.Time, j string, i int, ps string, entriesChan chan map[string]Entries, errChan chan error) {
+			e, err := entriesFromBOSHProcess(p, min, max, j, i, ps)
+			if err != nil {
+				errChan <- err
+			} else {
+				entriesChan <- e
+			}
+		}(filepath.Join(path, process), minTime, maxTime, job, index, process, processEntriesChans[process], processErrorChans[process])
+	}
 
-		e, err := entriesFromBOSHProcess(filepath.Join(path, info.Name()), minTime, maxTime, job, index)
-		if err != nil {
+	for process := range processEntriesChans {
+		select {
+		case err := <-processErrorChans[process]:
 			return nil, err
-		}
-		entries = append(entries, e...)
-
-		if len(e) == 0 {
-			say.Println(2, say.Red("EMPTY"))
+		case e := <-processEntriesChans[process]:
+			entries[process] = e
 		}
 	}
 
 	return entries, nil
 }
 
-func entriesFromBOSHProcess(path string, minTime time.Time, maxTime time.Time, job string, index int) (Entries, error) {
-	entries := Entries{}
+func entriesFromBOSHProcess(path string, minTime time.Time, maxTime time.Time, job string, index int, process string) (map[string]Entries, error) {
+	entries := map[string]Entries{}
 
 	infos, err := ioutil.ReadDir(path)
 	if err != nil {
@@ -122,14 +162,17 @@ func entriesFromBOSHProcess(path string, minTime time.Time, maxTime time.Time, j
 			continue
 		}
 
-		out := make(chan chug.Entry)
-		f, err := os.Open(filepath.Join(path, info.Name()))
+		file := info.Name()
+
+		f, err := os.Open(filepath.Join(path, file))
 		if err != nil {
 			return nil, err
 		}
+		out := make(chan chug.Entry)
 		go chug.Chug(f, out)
 
-		n := 0
+		say.Println(0, "%s %s/%d [%s] %s", say.Green("Processing"), job, index, process, file)
+		fileEntries := Entries{}
 		for chugEntry := range out {
 			if !chugEntry.IsLager {
 				continue
@@ -148,12 +191,10 @@ func entriesFromBOSHProcess(path string, minTime time.Time, maxTime time.Time, j
 			entry.Job = job
 			entry.Index = index
 
-			entries = append(entries, entry)
-			n += 1
+			fileEntries = append(fileEntries, entry)
 		}
-		if n != 0 {
-			say.Println(2, "%s %s", info.Name(), say.Green("%d", n))
-		}
+		say.Println(0, "%s       %s/%d [%s] %s", say.Yellow("Done"), job, index, process, file)
+		entries[file] = fileEntries
 	}
 
 	return entries, nil
