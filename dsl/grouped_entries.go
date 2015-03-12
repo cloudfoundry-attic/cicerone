@@ -42,6 +42,15 @@ func (g *GroupedEntries) AppendEntries(key interface{}, entries Entries) {
 	g.Entries[g.lookup[key]] = append(g.Entries[g.lookup[key]], entries...)
 }
 
+//Look up entries for a given key
+func (g *GroupedEntries) Lookup(key interface{}) (Entries, bool) {
+	index, ok := g.lookup[key]
+	if !ok {
+		return nil, false
+	}
+	return g.Entries[index], true
+}
+
 //EachGroup is an iterator (think functional thoughts) that loops over all Keys and Entries in order
 //
 //	groupedEntries.EachGroup(func(key interface{}, entries Entries) error {

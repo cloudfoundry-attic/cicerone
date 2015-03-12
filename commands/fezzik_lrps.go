@@ -3,6 +3,9 @@ package commands
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
 
 	"code.google.com/p/plotinum/plot"
 
@@ -15,7 +18,7 @@ import (
 type FezzikLRPs struct{}
 
 func (f *FezzikLRPs) Usage() string {
-	return "fezzik-lrps UNIFIED_BOSH_LOG"
+	return "fezzik-lrps UNIFIED_BOSH_LOG PROCESS-GUID"
 }
 
 func (f *FezzikLRPs) Description() string {
@@ -30,8 +33,8 @@ e.g. fezzik-lrps ~/workspace/performance/10-cells/fezzik-40xlrps/optimization-4-
 }
 
 func (f *FezzikLRPs) Command(outputDir string, args ...string) error {
-	if len(args) != 1 {
-		return fmt.Errorf("First argument must be a path to a unified BOSH log file")
+	if len(args) != 2 {
+		return fmt.Errorf("First argument must be a path to a lager file, second must be a process guid")
 	}
 
 	e, err := converters.EntriesFromLagerFile(args[0])
@@ -39,13 +42,27 @@ func (f *FezzikLRPs) Command(outputDir string, args ...string) error {
 		return err
 	}
 
-	byInstanceGuid := e.GroupBy(DataGetter("instance-guid", "container-guid", "guid", "container.guid", "handle"))
+	byInstanceGuid := f.extractInstanceGuidGroups(e, args[1])
+
+	say.Println(0, say.Green("Distribution"))
+	distribution := map[interface{}]int{}
+	byInstanceGuid.EachGroup(func(key interface{}, entries Entries) error {
+		entry, _ := entries.First(MatchMessage(`\.allocating-container`))
+		distribution[entry.VM()] += 1
+		return nil
+	})
+
+	for vm, count := range distribution {
+		say.Println(1, "%s: %s", say.Green("%s", vm), strings.Repeat("+", count))
+	}
 
 	lrpStartTimelineDescription := TimelineDescription{
+		// Creating ActualLRP (proxy - this is the event emitted)
+		{"Create-Event", MatchMessage(`running-watcher.watching-for-actual-lrp-changes.sending-create`)},
 		// Executor reserving container
-		{"Reserving-Container", MatchMessage(`allocate-containers.allocating-container`)},
+		{"Allocating", MatchMessage(`allocate-containers.allocating-container`)},
 		// Rep marked LRP CLAIMED in BBS
-		{"Claimed-Actual-LRP", MatchMessage(`claim-actual-lrp.succeeded`)},
+		{"Claimed-ALRP", MatchMessage(`claim-actual-lrp.succeeded`)},
 		// Executor created actual container in Garden
 		{"Created-Container", MatchMessage(`run-container.create-in-garden.succeeded-creating-garden-container`)},
 		// Executor configured container (memory limits, CPU limits, port mappings, etc.)
@@ -55,19 +72,19 @@ func (f *FezzikLRPs) Command(outputDir string, args ...string) error {
 		// Streamed download into container
 		{"Streamed-in-Download", MatchMessage(`run-container.run.download-step.stream-in-complete`)},
 		// Started Running LRP (grace) in container
-		{"Started-Running-LRP", And(MatchMessage(`garden-server.run.spawned`), RegExpMatcher(DataGetter("spec.path"), `grace`))},
+		{"Launch-Process", And(MatchMessage(`garden-server.run.spawned`), RegExpMatcher(DataGetter("spec.path"), `grace`))},
 		// Started Running monitor process (nc) in container
-		{"Started-Running-Monitor", And(MatchMessage(`garden-server.run.spawned`), RegExpMatcher(DataGetter("spec.path"), `nc`))},
+		{"Launch-Monitor", And(MatchMessage(`garden-server.run.spawned`), RegExpMatcher(DataGetter("spec.path"), `nc`))},
 		// Executor transitioning container to RUNNING
-		{"Transitioned-to-Running", MatchMessage(`run-container.run.run-step-process.succeeded-transitioning-to-running`)},
-		// Rep transitioned LRP to STARTED in BBS
-		{"Transitioned-to-Started", MatchMessage(`start-actual-lrp.succeeded`)},
-		// // Rep requesting container stop
-		// {"Stopping-Container", MatchMessage(`lrp-stopper.stop.stopping`)},
-		// // LRP has been cancelled
-		// {"Stopped-Container", MatchMessage(`run-container.run.run-step-process.step-cancelled`)},
-		// // Rep transitioned LRP to COMPLETEd in BBS
-		// {"Transitioned-to-Completed", MatchMessage(`run-container.run.run-step-process.succeeded-transitioning-to-complete`)},
+		{"Container-Is-Running", MatchMessage(`run-container.run.run-step-process.succeeded-transitioning-to-running`)},
+		// Rep transitioned LRP to RUNNING in BBS
+		{"Running-In-BBS", MatchMessage(`start-actual-lrp.succeeded`)},
+		// Rep requesting container stop
+		{"Stopping", MatchMessage(`lrp-stopper.stop.stopping`)},
+		// LRP has been cancelled
+		{"Stopped", MatchMessage(`run-container.run.run-step-process.step-cancelled`)},
+		// Rep transitioned LRP to COMPLETED in BBS
+		{"Remove-From-BBS", MatchMessage(`run-container.run.run-step-process.succeeded-transitioning-to-complete`)},
 	}
 
 	lrpStartTimelines, err := byInstanceGuid.ConstructTimelines(lrpStartTimelineDescription)
@@ -80,9 +97,58 @@ func (f *FezzikLRPs) Command(outputDir string, args ...string) error {
 		len(completeLRPStartTimelines),
 		len(lrpStartTimelines),
 		float64(len(completeLRPStartTimelines))/float64(len(lrpStartTimelines))*100.0))
-	plotFezzikLRPTimelinesAndHistograms(completeLRPStartTimelines, outputDir, "starting", 0)
+	plotFezzikLRPTimelinesAndHistograms(completeLRPStartTimelines, outputDir, "starting", 1)
 
 	return nil
+}
+
+func (f *FezzikLRPs) extractInstanceGuidGroups(e Entries, processGuid string) *GroupedEntries {
+	//find all instance-guid groupings
+	//these might include instances for process guids *other* than the one we care about
+	unfilteredByInstanceGuid := e.GroupBy(DataGetter("instance-guid", "container-guid", "guid", "container.guid", "handle"))
+
+	//request.depot-client.allocate-containers.allocating-container allows us to correlate processguid with instanceguid
+	//this fetches all such log-lines by the requested processGuid
+	//then groups them by instance guid
+	instances := e.Filter(And(
+		MatchMessage("request.depot-client.allocate-containers.allocating-container"),
+		RegExpMatcher(DataGetter("container.tags.process-guid"), processGuid),
+	)).GroupBy(DataGetter("container.guid"))
+
+	//running-watcher.watching-for-actual-lrp-changes.sending-create is emitted soon after the actualLRP is created in the BBS
+	//this is important information and is a proxy for when the ActualLRP enters the system
+	createEventsByIndex := e.Filter(And(
+		MatchMessage("running-watcher.watching-for-actual-lrp-changes.sending-create"),
+		RegExpMatcher(DataGetter("actual-lrp.process_guid"), processGuid),
+	)).GroupBy(DataGetter("actual-lrp.index"))
+
+	//we construct the final grouping by...
+	byInstanceGuid := NewGroupedEntries()
+
+	//...iterating over all possible instance guids...
+	unfilteredByInstanceGuid.EachGroup(func(key interface{}, entries Entries) error {
+		_, ok := instances.Lookup(key)
+		if !ok {
+			//...and rejecting any that don't correlate with the process guid in question
+			return nil
+		}
+
+		//we then work very hard to pick out the create event associated with the instance guid (by index)
+		indexEntry, _ := entries.First(MatchMessage("request.depot-client.allocate-containers.allocating-container"))
+		indexInterface, _ := DataGetter("container.tags.process-index").Get(indexEntry)
+		index, _ := strconv.ParseFloat(indexInterface.(string), 64)
+
+		createEventsForIndex, ok := createEventsByIndex.Lookup(index)
+		if ok {
+			entries = append(Entries{createEventsForIndex[0]}, entries...)
+			sort.Sort(entries)
+		}
+
+		byInstanceGuid.AppendEntries(key, entries)
+		return nil
+	})
+
+	return byInstanceGuid
 }
 
 func plotFezzikLRPTimelinesAndHistograms(timelines Timelines, outputDir string, prefix string, vmEventIndex int) {
