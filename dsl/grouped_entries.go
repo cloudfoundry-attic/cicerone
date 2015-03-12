@@ -3,6 +3,7 @@ package dsl
 import (
 	"fmt"
 	"io"
+	"sort"
 )
 
 //GroupedEntries represent an ordered collection of Grouped Entries.
@@ -83,21 +84,43 @@ func (g *GroupedEntries) Filter(matcher Matcher) *GroupedEntries {
 	return filteredGroups
 }
 
+func (g *GroupedEntries) first(matcher Matcher) (Entry, bool) {
+	firsts := make(Entries, 0, len(g.Entries))
+
+	for _, entries := range g.Entries {
+		if fst, found := entries.First(matcher); found {
+			firsts = append(firsts, fst)
+		}
+	}
+
+	if len(firsts) == 0 {
+		return Entry{}, false
+	} else {
+		sort.Sort(firsts)
+		return firsts[0], true
+	}
+}
+
 //ConstructTimelines creates a slice of Timelines by calling entries.ConstructTimeline on each Entries element in the group.
 //The Key associated with the Entries element becomes the Annotation associated with the Timeline.
 //
 //Note that Timelines aren't Key=>Timeline mappings.  Instead GroupedEntries returns a *flat list* of Timelines with the Key parameter associated with the individual Timeline.
-func (g *GroupedEntries) ConstructTimelines(description TimelineDescription, zeroEntry Entry) Timelines {
+func (g *GroupedEntries) ConstructTimelines(description TimelineDescription) (Timelines, error) {
+	firstEntry, found := g.first(description[0].Matcher)
+	if !found {
+		return Timelines{}, fmt.Errorf("unable to find first entry to anchor timelines")
+	}
+
 	timelines := Timelines{}
 
 	g.EachGroup(func(key interface{}, entries Entries) error {
-		timeline := entries.ConstructTimeline(description, zeroEntry)
+		timeline := entries.ConstructTimeline(description, firstEntry)
 		timeline.Annotation = key
 		timelines = append(timelines, timeline)
 		return nil
 	})
 
-	return timelines
+	return timelines, nil
 }
 
 //WriteLagerFormat emits lager formatted output for all Entries in the group.

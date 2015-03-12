@@ -47,8 +47,6 @@ func (f *AnalyzeCFPushes) Command(outputDir string, args ...string) error {
 		return err
 	}
 
-	firstEntry := byApplication.Entries[0][0]
-
 	timelineDescription := TimelineDescription{
 		{"Created", MatchMessage(`Updated app with guid .* \(\{"diego"=>true`)},
 		{"CC-Says-Start", MatchMessage(`Updated app with guid .* \(\{"state"=>"STARTED"\}\)`)},
@@ -63,7 +61,10 @@ func (f *AnalyzeCFPushes) Command(outputDir string, args ...string) error {
 		{"Healthy", MatchMessage(`healthcheck passed`)},
 	}
 
-	timelines := byApplication.ConstructTimelines(timelineDescription, firstEntry)
+	timelines, err := byApplication.ConstructTimelines(timelineDescription)
+	if err != nil {
+		return err
+	}
 	completeTimelines := timelines.CompleteTimelines()
 	say.Println(0, say.Red("Complete Timelines: %d/%d (%.2f%%)\n",
 		len(completeTimelines),

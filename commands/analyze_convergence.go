@@ -44,8 +44,6 @@ func (f *AnalyzeConvergenceForMissingCells) Command(outputDir string, args ...st
 
 	byLRP := entries.GroupBy(DataGetter("process-guid"))
 
-	firstEntry := byLRP.Entries[0][0]
-
 	timelineDescription := TimelineDescription{
 		{"Noticed-Missing-Cell", MatchMessage(`converge-lrps.calculate-convergence.missing-cell`)},
 		{"Removing-Actual-LRP", MatchMessage(`start-missing-actual.remove-actual-lrp.starting`)},
@@ -53,7 +51,11 @@ func (f *AnalyzeConvergenceForMissingCells) Command(outputDir string, args ...st
 		{"Adding-Start-Auction", MatchMessage(`start-missing-actual.adding-start-auction`)},
 	}
 
-	timelines := byLRP.ConstructTimelines(timelineDescription, firstEntry)
+	timelines, err := byLRP.ConstructTimelines(timelineDescription)
+	if err != nil {
+		return err
+	}
+
 	completeTimelines := timelines.CompleteTimelines()
 	say.Println(0, say.Red("Complete Timelines: %d/%d (%.2f%%)\n",
 		len(completeTimelines),

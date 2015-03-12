@@ -42,7 +42,6 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 	fmt.Println("Receptors that handled resolves:", e.Filter(MatchMessage(`resolved-task`)).GroupBy(GetVM).Keys)
 
 	byTaskGuid := e.GroupBy(DataGetter("task-guid", "container-guid", "guid", "container.guid"))
-	firstEntry := byTaskGuid.Entries[0][0]
 
 	startToEndTimelineDescription := TimelineDescription{
 		// receptor says create.creating-task when it hears about our task
@@ -69,7 +68,10 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 		{"Resolved", MatchMessage(`resolved-task`)},
 	}
 
-	startToEndTimelines := byTaskGuid.ConstructTimelines(startToEndTimelineDescription, firstEntry)
+	startToEndTimelines, err := byTaskGuid.ConstructTimelines(startToEndTimelineDescription)
+	if err != nil {
+		return err
+	}
 	completeStartToEndTimelines := startToEndTimelines.CompleteTimelines()
 	say.Println(0, say.Red("Complete Start-To-End Timelines: %d/%d (%.2f%%)\n",
 		len(completeStartToEndTimelines),
@@ -87,7 +89,10 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 		{"Running-In-BBS", MatchMessage(`\.succeeded-starting-task`)},
 	}
 
-	startToScheduledTimelines := byTaskGuid.ConstructTimelines(startToScheduledTimelineDescription, firstEntry)
+	startToScheduledTimelines, err := byTaskGuid.ConstructTimelines(startToScheduledTimelineDescription)
+	if err != nil {
+		return err
+	}
 	completeStartToScheduledTimelines := startToScheduledTimelines.CompleteTimelines()
 	say.Println(0, say.Red("Complete Start-To-Scheduled Timelines: %d/%d (%.2f%%)\n",
 		len(completeStartToScheduledTimelines),
