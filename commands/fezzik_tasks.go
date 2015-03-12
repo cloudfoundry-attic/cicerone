@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"code.google.com/p/plotinum/plot"
 
@@ -15,12 +16,12 @@ import (
 type FezzikTasks struct{}
 
 func (f *FezzikTasks) Usage() string {
-	return "fezzik-tasks FEZZIK_PAPERTRAIL_LOGS"
+	return "fezzik-tasks UNIFIED_BOSH_LOGS <OPTIONAL-TASK-GUID-PREFIX>"
 }
 
 func (f *FezzikTasks) Description() string {
 	return `
-Takes a papertrail log file that covers a Fezzik Task run
+Takes a unified bosh log file that covers a Fezzik Task run
 and generates timeline plots for all Tasks and histograms
 for the durations of key events.
 
@@ -29,13 +30,17 @@ e.g. fezzik-tasks ~/workspace/performance/10-cells/fezzik-40xtasks/optimization-
 }
 
 func (f *FezzikTasks) Command(outputDir string, args ...string) error {
-	if len(args) != 1 {
-		return fmt.Errorf("First argument must be a papertrail logs file")
+	if len(args) == 0 {
+		return fmt.Errorf("First argument must be a lager file")
 	}
 
-	e, err := converters.EntriesFromPapertrailFile(args[0])
+	e, err := converters.EntriesFromLagerFile(args[0])
 	if err != nil {
 		return err
+	}
+
+	if len(args) == 2 {
+		e = e.Filter(RegExpMatcher(DataGetter("task-guid", "container-guid", "guid", "container.guid"), args[1]))
 	}
 
 	fmt.Println("Receptors that handled creates:", e.Filter(MatchMessage(`create\.creating-task`)).GroupBy(GetVM).Keys)
@@ -68,12 +73,19 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 		{"Resolved", MatchMessage(`resolved-task`)},
 	}
 
+	say.Println(0, say.Green("Distribution"))
+	byVM := e.Filter(MatchMessage(`\.allocating-container`)).GroupBy(GetVM)
+	byVM.EachGroup(func(key interface{}, entries Entries) error {
+		say.Println(1, "%s: %s", say.Green("%s", key), strings.Repeat("+", len(entries)))
+		return nil
+	})
+
 	startToEndTimelines, err := byTaskGuid.ConstructTimelines(startToEndTimelineDescription)
 	if err != nil {
 		return err
 	}
 	completeStartToEndTimelines := startToEndTimelines.CompleteTimelines()
-	say.Println(0, say.Red("Complete Start-To-End Timelines: %d/%d (%.2f%%)\n",
+	say.Println(0, say.Red("Complete Start-To-End Timelines: %d/%d (%.2f%%)",
 		len(completeStartToEndTimelines),
 		len(startToEndTimelines),
 		float64(len(completeStartToEndTimelines))/float64(len(startToEndTimelines))*100.0))
@@ -94,7 +106,7 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 		return err
 	}
 	completeStartToScheduledTimelines := startToScheduledTimelines.CompleteTimelines()
-	say.Println(0, say.Red("Complete Start-To-Scheduled Timelines: %d/%d (%.2f%%)\n",
+	say.Println(0, say.Red("Complete Start-To-Scheduled Timelines: %d/%d (%.2f%%)",
 		len(completeStartToScheduledTimelines),
 		len(startToScheduledTimelines),
 		float64(len(completeStartToScheduledTimelines))/float64(len(startToScheduledTimelines))*100.0))
