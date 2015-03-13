@@ -45,6 +45,25 @@ func (t Timelines) Description() TimelineDescription {
 	return t[0].Description
 }
 
+//GroupBy returns GroupedTimelines - to compute the grouping key
+//a matcher is used to pick out an entry in the timeline
+//then a getter is used to fetch the key
+func (t Timelines) GroupBy(matcher Matcher, getter Getter) *GroupedTimelines {
+	groupedTimelines := NewGroupedTimelines()
+	for _, timeline := range t {
+		entry, ok := timeline.First(matcher)
+		if !ok {
+			continue
+		}
+		key, ok := getter.Get(entry)
+		if !ok {
+			continue
+		}
+		groupedTimelines.Append(key, timeline)
+	}
+	return groupedTimelines
+}
+
 //SortByVMForEntryAtindex sorts the Timelines in-place by VM
 //
 //Since a Timeline can be comprised of events that span multiple VMs one must specify the entry (by index in the TimelineDescription)
@@ -86,7 +105,7 @@ func (t Timelines) EntryPairs(index int) EntryPairs {
 
 //MatchedEntryPairs fetches two EntryPairs, one for each of the passed-in indices for each Timeline.
 //It ensures that each entry in the first EntryPairs list corresponds to the entry at the same index in the second list.
-//It alos ensures that no entries with negative DTs are in either list.
+//It also ensures that no entries with negative DTs are in either list.
 //
 //See the documentation for timeline.EntryPair for more details
 func (t Timelines) MatchedEntryPairs(i, j int) (EntryPairs, EntryPairs) {

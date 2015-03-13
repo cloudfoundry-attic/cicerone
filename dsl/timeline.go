@@ -87,6 +87,11 @@ func (t Timeline) EntryPair(index int) (EntryPair, bool) {
 	}, true
 }
 
+//First returns the first entry in the timeline that matches the passed-in matcher
+func (t Timeline) First(matcher Matcher) (Entry, bool) {
+	return t.Entries.First(matcher)
+}
+
 //IsComplete returns true if all events in the timeline are present
 func (t Timeline) IsComplete() bool {
 	for i := range t.Description {

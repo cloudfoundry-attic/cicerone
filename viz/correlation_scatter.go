@@ -1,6 +1,7 @@
 package viz
 
 import (
+	"fmt"
 	"image/color"
 
 	"code.google.com/p/plotinum/plot"
@@ -66,6 +67,41 @@ func NewCorrelationBoard(timelines Timelines) (*UniformBoard, error) {
 			p.X.Label.Text = timelines.Description()[i].Name
 			p.X.Label.Color = OrderedColors[i]
 			p.Y.Label.Text = timelines.Description()[j].Name
+			p.Y.Label.Color = OrderedColors[j]
+			board.AddSubPlotAt(p, i, j)
+		}
+	}
+	return board, nil
+}
+
+//Constructs and returns a correlation board between all possible entry pairs
+func NewGroupedCorrelationBoard(group *GroupedTimelines) (*UniformBoard, error) {
+	size := len(group.Description())
+
+	board := NewUniformBoard(size, size, 0.01)
+	for i := 0; i < size; i++ {
+		for j := 0; j < size; j++ {
+			p, _ := plot.New()
+
+			for k, timelines := range group.Timelines {
+				iPairs, jPairs := timelines.MatchedEntryPairs(i, j)
+
+				xDurations := iPairs.Durations()
+				yDurations := jPairs.Durations()
+
+				s, err := newCorrelationScatter(xDurations, yDurations, OrderedColors[k])
+				if err != nil {
+					return nil, err
+				}
+				p.Add(s)
+				if i == 0 && j == 0 {
+					p.Legend.Add(fmt.Sprintf("%s", group.Keys[k]), s)
+				}
+			}
+
+			p.X.Label.Text = group.Description()[i].Name
+			p.X.Label.Color = OrderedColors[i]
+			p.Y.Label.Text = group.Description()[j].Name
 			p.Y.Label.Color = OrderedColors[j]
 			board.AddSubPlotAt(p, i, j)
 		}

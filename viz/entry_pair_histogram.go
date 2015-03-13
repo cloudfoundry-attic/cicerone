@@ -1,6 +1,7 @@
 package viz
 
 import (
+	"fmt"
 	"image/color"
 	"time"
 
@@ -80,6 +81,28 @@ func NewEntryPairsHistogramBoard(timelines Timelines) *UniformBoard {
 		h := NewScaledEntryPairsHistogram(entryPairs, 30, 0, timelines.EndsAfter())
 		h.Color = color.RGBA{0, 0, 0, 255}
 		p.Add(h)
+		histograms.AddNextSubPlot(p)
+	}
+
+	return histograms
+}
+
+func NewGroupedTimelineEntryPairsHistogramBoard(group *GroupedTimelines) *UniformBoard {
+	histograms := NewUniformBoard(len(group.Description()), 1, 0.01)
+
+	for i, timelinePoint := range group.Description() {
+		p, _ := plot.New()
+		p.Title.Text = timelinePoint.Name
+		p.Title.Color = OrderedColors[i]
+		for j, timelines := range group.Timelines {
+			entryPairs := timelines.EntryPairs(i)
+			h := NewEntryPairsHistogram(entryPairs, 30)
+			h.Color = OrderedColors[j]
+			p.Add(h)
+			if i == 0 {
+				p.Legend.Add(fmt.Sprintf("%s", group.Keys[j]), &LineThumbnailer{h.LineStyle})
+			}
+		}
 		histograms.AddNextSubPlot(p)
 	}
 
