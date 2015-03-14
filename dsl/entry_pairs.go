@@ -1,9 +1,20 @@
 package dsl
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 //EntryPairs is a slice of EntryPair
 type EntryPairs []EntryPair
+
+func (e EntryPairs) String() string {
+	s := []string{}
+	for _, pair := range e {
+		s = append(s, pair.String())
+	}
+	return strings.Join(s, "\n")
+}
 
 //DTStats returns a DTStats rollup summarizing the distribution of time intervals in the slice of EntryPairs
 func (e EntryPairs) DTStats() DTStats {
@@ -42,4 +53,28 @@ func (e EntryPairs) Durations() Durations {
 		durations = append(durations, entry.DT())
 	}
 	return durations
+}
+
+//FilterByDurationGreaterThan returns a copy of the EntryPairs containing entries that exceed the passed in duration
+func (e EntryPairs) FilterByDurationGreaterThan(cutoff time.Duration) EntryPairs {
+	filteredPairs := EntryPairs{}
+	for _, pair := range e {
+		if pair.DT() > cutoff {
+			filteredPairs = append(filteredPairs, pair)
+		}
+	}
+
+	return filteredPairs
+}
+
+//FilterByDurationGreaterThan returns a copy of the EntryPairs containing entries that exceed the passed in duration
+func (e EntryPairs) FilterByDurationLessThan(cutoff time.Duration) EntryPairs {
+	filteredPairs := EntryPairs{}
+	for _, pair := range e {
+		if pair.DT() < cutoff {
+			filteredPairs = append(filteredPairs, pair)
+		}
+	}
+
+	return filteredPairs
 }
