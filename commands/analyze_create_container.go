@@ -77,18 +77,17 @@ func (f *AnalyzeCreateContainer) Command(outputDir string, args ...string) error
 func loadGardenLogFiles(file string) (*GroupedEntries, error) {
 	groups := NewGroupedEntries()
 	entries, err := converters.EntriesFromLagerFile(file)
-	fmt.Printf("entries in log file: %d", len(entries))
 	if err != nil {
 		return nil, err
 	}
 
+	//all of this is necessary only because garden injects the identifier in the message.  instead the identifier should be data in the lager.Data hash.
 	uniqueHandles := []string{}
 	for _, entry := range entries {
 		message := entry.LogEntry.Message
 		if strings.Contains(message, "garden-linux.pool") && strings.Contains(message, "creating") {
 			handle := getContainerHandle(message)
 			if !contains(uniqueHandles, handle) {
-				fmt.Println("************* Adding handle to unique set")
 				uniqueHandles = append(uniqueHandles, handle)
 			}
 		}
@@ -99,7 +98,6 @@ func loadGardenLogFiles(file string) (*GroupedEntries, error) {
 		for _, entry := range entries {
 			message := entry.LogEntry.Message
 			if strings.Contains(message, handle) {
-				fmt.Println("************* Adding entry for handle")
 				entriesForHandle = append(entriesForHandle, entry)
 			}
 		}
@@ -109,7 +107,6 @@ func loadGardenLogFiles(file string) (*GroupedEntries, error) {
 	return groups, nil
 }
 
-//{"timestamp":"1426587234.415438175","source":"garden-linux","message":"garden-linux.pool.j21gjdqagvq.creating","log_level":1,"data":{"session":"2.1"}}
 func getContainerHandle(message string) string {
 	return strings.Split(message, ".")[2]
 }
