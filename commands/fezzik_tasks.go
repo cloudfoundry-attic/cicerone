@@ -56,7 +56,7 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 		// receptor says create.did-fetch-auctioneer-address after it fetches the auctioneer address from the BBS
 		{"Fetched-Auctioneer-Addr", MatchMessage(`create\.did-fetch-auctioneer-address`)},
 		// receptor says create.created after the auction has been submitted (this entails a round-trip to the auctioneer)
-		{"Auction-Submitted", MatchMessage(`create\.created`)},
+		{"Auction-Submitted", MatchMessage(`task-handler\.create\.created`)},
 		// executor says allocating-container when the rep asks it to allocate a container for the task (this measures how long it took the auction to place the task on the rep)
 		{"Allocating-Container", MatchMessage(`\.allocating-container`)},
 		// the rep says processing-reserved-container when the executor emits the allocation event
