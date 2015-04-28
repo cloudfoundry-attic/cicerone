@@ -1,6 +1,9 @@
 package dsl
 
-import "strings"
+import (
+	"encoding/json"
+	"strings"
+)
 
 //Getter objects can return arbitrary data from a passed-in-Entry
 type Getter interface {
@@ -60,12 +63,50 @@ var GetSession = GetterFunc(func(entry Entry) (interface{}, bool) {
 //To group by TaskGuid one can
 //
 //	entries.GroupBy(DataGetter("TaskGuid", "Guid", "Container.Handle"))
-func DataGetter(key ...string) Getter {
+func DataGetter(keys ...string) Getter {
+	transformationMap := TransformationMap{}
+	for _, key := range keys {
+		transformationMap[key] = NoOpTransformation
+	}
+	return TransformingGetter(transformationMap)
+}
+
+type TransformationFunction func(interface{}) (interface{}, bool)
+type TransformationMap map[string]TransformationFunction
+
+var NoOpTransformation = func(d interface{}) (interface{}, bool) {
+	return d, true
+}
+
+var TrimTransformation = func(d interface{}) (interface{}, bool) {
+	bs, err := json.Marshal(d)
+	if err != nil {
+		return nil, false
+	}
+	return strings.Trim(string(bs), `"`), true
+}
+
+func TrimWithPrefixTransformation(prefix string) TransformationFunction {
+	return func(d interface{}) (interface{}, bool) {
+		bs, err := json.Marshal(d)
+		if err != nil {
+			return nil, false
+		}
+
+		s := strings.Trim(string(bs), `"`)
+		if !strings.Contains(s, prefix) {
+			return nil, false
+		}
+		return strings.TrimPrefix(s, prefix), true
+	}
+}
+
+func TransformingGetter(transformations TransformationMap) Getter {
 	return GetterFunc(func(entry Entry) (interface{}, bool) {
-		for _, k := range key {
+		for k, f := range transformations {
 			subKeys := strings.Split(k, ".")
-			if v, ok := getSubKey(entry.Data, subKeys); ok {
-				return v, true
+			if rawValue, ok := getSubKey(entry.Data, subKeys); ok {
+				return f(rawValue)
 			}
 		}
 

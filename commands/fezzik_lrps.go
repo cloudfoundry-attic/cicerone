@@ -105,7 +105,14 @@ func (f *FezzikLRPs) Command(outputDir string, args ...string) error {
 func (f *FezzikLRPs) extractInstanceGuidGroups(e Entries, processGuid string) *GroupedEntries {
 	//find all instance-guid groupings
 	//these might include instances for process guids *other* than the one we care about
-	unfilteredByInstanceGuid := e.GroupBy(DataGetter("instance-guid", "container-guid", "guid", "container.guid", "handle"))
+	unfilteredByInstanceGuid := e.GroupBy(TransformingGetter(TransformationMap{
+		"instance-guid":  TrimTransformation,
+		"instance_guid":  TrimTransformation,
+		"container-guid": TrimWithPrefixTransformation(processGuid + "-"),
+		"guid":           TrimWithPrefixTransformation(processGuid + "-"),
+		"container.guid": TrimWithPrefixTransformation(processGuid + "-"),
+		"handle":         TrimWithPrefixTransformation(processGuid + "-"),
+	}))
 
 	//request.depot-client.allocate-containers.allocating-container allows us to correlate processguid with instanceguid
 	//this fetches all such log-lines by the requested processGuid
@@ -113,7 +120,7 @@ func (f *FezzikLRPs) extractInstanceGuidGroups(e Entries, processGuid string) *G
 	instances := e.Filter(And(
 		MatchMessage("request.depot-client.allocate-containers.allocating-container"),
 		RegExpMatcher(DataGetter("container.tags.process-guid"), processGuid),
-	)).GroupBy(DataGetter("container.guid"))
+	)).GroupBy(TransformingGetter(TransformationMap{"container.guid": TrimWithPrefixTransformation(processGuid + "-")}))
 
 	//running-watcher.watching-for-actual-lrp-changes.sending-create is emitted soon after the actualLRP is created in the BBS
 	//this is important information and is a proxy for when the ActualLRP enters the system
