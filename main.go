@@ -52,7 +52,7 @@ func main() {
 			err := command.Command(outputDir, args[1:]...)
 
 			if err != nil {
-				fmt.Printf("Command %s failed", commandName)
+				fmt.Printf("Command %s failed\n", commandName)
 				fmt.Println(err.Error())
 				os.Exit(1)
 			}
