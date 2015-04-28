@@ -68,9 +68,9 @@ func (f *FezzikLRPs) Command(outputDir string, args ...string) error {
 		// Executor configured container (memory limits, CPU limits, port mappings, etc.)
 		{"Configured-Container", MatchMessage(`run-container.create-in-garden.succeeded-getting-garden-container-info`)},
 		// Fetching download
-		{"Fetched-Download", MatchMessage(`run-container.run.download-step.fetch-complete`)},
+		{"Fetched-Download", MatchMessage(`run-container.run.setup.download-step.fetch-complete`)},
 		// Streamed download into container
-		{"Streamed-in-Download", MatchMessage(`run-container.run.download-step.stream-in-complete`)},
+		{"Streamed-in-Download", MatchMessage(`run-container.run.setup.download-step.stream-in-complete`)},
 		// Started Running LRP (grace) in container
 		{"Launch-Process", And(MatchMessage(`garden-server.run.spawned`), RegExpMatcher(DataGetter("spec.path"), `grace`))},
 		// Started Running monitor process (nc) in container
