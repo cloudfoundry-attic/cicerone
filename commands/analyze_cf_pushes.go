@@ -24,27 +24,32 @@ func init() {
 type AnalyzeCFPushes struct{}
 
 func (f *AnalyzeCFPushes) Usage() string {
-	return "analyze-cf-pushes APPLICATION_PUSH_LOGS..."
+	return "analyze-cf-pushes APPLICATION_PUSH_LOGS_GLOB_PATTERN"
 }
 
 func (f *AnalyzeCFPushes) Description() string {
 	return `
-Takes a list of application push log file that each contain the
-cf logs --recent output of cf push.
+Takes a glob pattern for application push log file that each contain the
+'cf logs --recent' output of 'cf push'.
 
 Analyze-cf-pushes then generates timeline plots for each application and histograms
 for the durations of key events.
 
-e.g. analyze-cf-pushes ~/workspace/performance/10-cells/cf-pushes/optimization-1-no-logs/raw-pushes/**/log*
+e.g. analyze-cf-pushes "${HOME}/workspace/performance/10-cells/cf-pushes/optimization-1-no-logs/raw-pushes/**/log*"
 `
 }
 
 func (f *AnalyzeCFPushes) Command(outputDir string, args ...string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("Expected a list of application push logs")
+	if len(args) != 1 {
+		return fmt.Errorf("Expected a glob pattern for application push logs")
 	}
 
-	byApplication, err := loadCFPushFiles(args...)
+	files, err := filepath.Glob(args[0])
+	if err != nil {
+		return err
+	}
+
+	byApplication, err := loadCFPushFiles(files...)
 	if err != nil {
 		return err
 	}
