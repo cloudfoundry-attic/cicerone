@@ -8,9 +8,9 @@ import (
 
 	"code.google.com/p/plotinum/plot"
 
-	"github.com/onsi/cicerone/converters"
-	. "github.com/onsi/cicerone/dsl"
-	"github.com/onsi/cicerone/viz"
+	"github.com/cloudfoundry-incubator/cicerone/converters"
+	. "github.com/cloudfoundry-incubator/cicerone/dsl"
+	"github.com/cloudfoundry-incubator/cicerone/viz"
 	"github.com/onsi/say"
 	"github.com/pivotal-golang/lager"
 )

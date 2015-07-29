@@ -5,7 +5,7 @@ import (
 
 	"code.google.com/p/plotinum/plot"
 
-	. "github.com/onsi/cicerone/dsl"
+	. "github.com/cloudfoundry-incubator/cicerone/dsl"
 )
 
 //TimelinesPlotter plots a stack of Timelines in the specified time range

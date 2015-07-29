@@ -8,7 +8,7 @@ import (
 	"code.google.com/p/plotinum/plot"
 	"code.google.com/p/plotinum/plotter"
 
-	. "github.com/onsi/cicerone/dsl"
+	. "github.com/cloudfoundry-incubator/cicerone/dsl"
 )
 
 //NewEntryPairsHistogram plots a Historam (using n bins) of the durations in the passed in EntryPairs

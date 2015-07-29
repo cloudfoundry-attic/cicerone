@@ -3,7 +3,7 @@ package converters
 import (
 	"os"
 
-	. "github.com/onsi/cicerone/dsl"
+	. "github.com/cloudfoundry-incubator/cicerone/dsl"
 	"github.com/pivotal-golang/lager/chug"
 )
 

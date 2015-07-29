@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	. "github.com/onsi/cicerone/dsl"
+	. "github.com/cloudfoundry-incubator/cicerone/dsl"
 	"github.com/onsi/say"
 	"github.com/pivotal-golang/lager/chug"
 )

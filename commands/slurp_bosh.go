@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/onsi/cicerone/converters"
+	"github.com/cloudfoundry-incubator/cicerone/converters"
 )
 
 type SlurpBosh struct{}

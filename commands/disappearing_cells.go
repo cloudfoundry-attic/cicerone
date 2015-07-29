@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cloudfoundry-incubator/cicerone/converters"
 	"github.com/cloudfoundry/gunk/workpool"
 
-	"github.com/onsi/cicerone/converters"
-	. "github.com/onsi/cicerone/dsl"
+	. "github.com/cloudfoundry-incubator/cicerone/dsl"
 	"github.com/onsi/say"
 )
 

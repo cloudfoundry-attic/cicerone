@@ -6,7 +6,7 @@ import (
 
 	"code.google.com/p/plotinum/plot"
 	"code.google.com/p/plotinum/plotter"
-	. "github.com/onsi/cicerone/dsl"
+	. "github.com/cloudfoundry-incubator/cicerone/dsl"
 )
 
 func newCorrelationScatter(xDurations Durations, yDurations Durations, c color.Color) (*plotter.Scatter, error) {

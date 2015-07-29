@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/onsi/cicerone/commands"
+	"github.com/cloudfoundry-incubator/cicerone/commands"
 	"github.com/onsi/say"
 )
 

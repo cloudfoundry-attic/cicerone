@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/onsi/cicerone/dsl"
+	. "github.com/cloudfoundry-incubator/cicerone/dsl"
 
 	"github.com/pivotal-golang/lager"
 )
