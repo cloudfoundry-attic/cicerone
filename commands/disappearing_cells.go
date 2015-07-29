@@ -65,7 +65,7 @@ to analyze everything
 }
 
 func (a *AnalyzeDisappearingCells) Command(outputDir string, args ...string) error {
-	a.workPool = workpool.NewWorkPool(runtime.NumCPU())
+	a.workPool, _ = workpool.NewWorkPool(runtime.NumCPU())
 	a.pickEvents(args)
 	say.Println(0, say.Green("Loading Entries"))
 	a.loadEntries()
@@ -240,7 +240,7 @@ func (f *SlurpDisappearingCells) Description() string {
 }
 
 func (f *SlurpDisappearingCells) Command(outputDir string, args ...string) error {
-	wp := workpool.NewWorkPool(8)
+	wp, _ := workpool.NewWorkPool(8)
 	wg := &sync.WaitGroup{}
 	wg.Add(len(disappearingCellEvents))
 

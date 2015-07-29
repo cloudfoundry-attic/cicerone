@@ -128,9 +128,16 @@ func MatchAfter(t time.Time) Matcher {
 	})
 }
 
-//MatchBefore returns true if hte Entry's timestamp is before the passed-in time
+//MatchBefore returns true if the Entry's timestamp is before the passed-in time
 func MatchBefore(t time.Time) Matcher {
 	return MatcherFunc(func(entry Entry) bool {
 		return entry.Timestamp.Before(t)
+	})
+}
+
+//MatchBefore returns true if the Entry's timestamp is within the interval supplied
+func MatchBetween(after, before time.Time) Matcher {
+	return MatcherFunc(func(entry Entry) bool {
+		return entry.Timestamp.Before(before) && entry.Timestamp.After(after)
 	})
 }
