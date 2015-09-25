@@ -58,7 +58,7 @@ var GetSession = GetterFunc(func(entry Entry) (interface{}, bool) {
 //A key can be a full-blown JSON path (e.g. `foo.bar.baz`) -- DataGetter will traverse the Data field as far as possible to fetch the corresponding value.
 //
 //These behaviors combine well wtih entries.GroupBy.  In particular, we are often inconsistent with how we name keys in our lager.Data -- sometimes this is intentional
-//as a message passes from one layer of abstraction to another.  For example, TaskGuid becomes Guid becomes Container.Handle as it flows from Receptor=>Rep=>Executor=>Garden.
+//as a message passes from one layer of abstraction to another.  For example, TaskGuid becomes Guid becomes Container.Handle as it flows from BBS=>Rep=>Executor=>Garden.
 //
 //To group by TaskGuid one can
 //

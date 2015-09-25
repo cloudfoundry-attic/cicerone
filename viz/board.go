@@ -7,12 +7,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"code.google.com/p/plotinum/plot"
-	"code.google.com/p/plotinum/vg"
-	"code.google.com/p/plotinum/vg/vgeps"
-	"code.google.com/p/plotinum/vg/vgimg"
-	"code.google.com/p/plotinum/vg/vgpdf"
-	"code.google.com/p/plotinum/vg/vgsvg"
+	"github.com/gonum/plot"
+	"github.com/gonum/plot/vg"
+	"github.com/gonum/plot/vg/draw"
+	"github.com/gonum/plot/vg/vgeps"
+	"github.com/gonum/plot/vg/vgimg"
+	"github.com/gonum/plot/vg/vgpdf"
+	"github.com/gonum/plot/vg/vgsvg"
 )
 
 //Rect represents a rectangle
@@ -27,10 +28,13 @@ type SubPlot struct {
 }
 
 //ScaledRect returns a plotinum Rectangle, appropriately scaled to match the SubPlot's unit rectangle
-func (sp SubPlot) ScaledRect(width, height float64) plot.Rect {
-	return plot.Rect{
-		Min:  plot.Point{vg.Length(sp.Rect.X * width), vg.Length(sp.Rect.Y * height)},
-		Size: plot.Point{vg.Length(sp.Rect.Width * width), vg.Length(sp.Rect.Height * height)},
+func (sp SubPlot) ScaledRect(width, height float64) draw.Rectangle {
+	return draw.Rectangle{
+		Min: draw.Point{vg.Length(sp.Rect.X * width), vg.Length(sp.Rect.Y * height)},
+		Max: draw.Point{
+			vg.Length(sp.Rect.X*width) + vg.Length(sp.Rect.Width*width),
+			vg.Length(sp.Rect.Y*height) + vg.Length(sp.Rect.Height*height),
+		},
 	}
 }
 
@@ -104,7 +108,7 @@ func (b *Board) AddSubPlot(plot *plot.Plot, rect Rect) {
 //Save saves the board (i.e. all subplots, appropriately laid out) to the specified filename.
 //It basically rips off the implementation of Save in plotinum to support various file formats.
 func (b *Board) Save(width, height float64, file string) (err error) {
-	w, h := vg.Inches(width), vg.Inches(height)
+	w, h := vg.Inch*vg.Length(width), vg.Inch*vg.Length(height)
 	var c interface {
 		vg.Canvas
 		Size() (w, h vg.Length)
@@ -136,9 +140,9 @@ func (b *Board) Save(width, height float64, file string) (err error) {
 
 	for _, subplot := range b.SubPlots {
 		w, h := c.Size()
-		drawArea := plot.DrawArea{
-			Canvas: c,
-			Rect:   subplot.ScaledRect(float64(w), float64(h)),
+		drawArea := draw.Canvas{
+			Canvas:    c,
+			Rectangle: subplot.ScaledRect(float64(w), float64(h)),
 		}
 
 		subplot.Plot.Draw(drawArea)

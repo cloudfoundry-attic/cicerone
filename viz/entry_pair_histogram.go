@@ -5,8 +5,8 @@ import (
 	"image/color"
 	"time"
 
-	"code.google.com/p/plotinum/plot"
-	"code.google.com/p/plotinum/plotter"
+	"github.com/gonum/plot"
+	"github.com/gonum/plot/plotter"
 
 	. "github.com/cloudfoundry-incubator/cicerone/dsl"
 )
@@ -54,7 +54,10 @@ func NewEntryPairsHistogramBoard(timelines Timelines) *UniformBoard {
 
 	for i, timelinePoint := range timelines.Description() {
 		entryPairs := timelines.EntryPairs(i)
-		p, _ := plot.New()
+		p, err := plot.New()
+		if err != nil {
+			panic(err)
+		}
 		p.Title.Text = timelinePoint.Name
 		p.Title.Color = OrderedColors[i]
 		h := NewEntryPairsHistogram(entryPairs, 30)

@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"image/color"
 
-	"code.google.com/p/plotinum/plot"
-	"code.google.com/p/plotinum/plotter"
 	. "github.com/cloudfoundry-incubator/cicerone/dsl"
+	"github.com/gonum/plot"
+	"github.com/gonum/plot/plotter"
+	"github.com/gonum/plot/vg/draw"
 )
 
 func newCorrelationScatter(xDurations Durations, yDurations Durations, c color.Color) (*plotter.Scatter, error) {
@@ -18,10 +19,10 @@ func newCorrelationScatter(xDurations Durations, yDurations Durations, c color.C
 	if err != nil {
 		return nil, err
 	}
-	s.GlyphStyle = plot.GlyphStyle{
+	s.GlyphStyle = draw.GlyphStyle{
 		Color:  c,
 		Radius: 2,
-		Shape:  plot.CircleGlyph{},
+		Shape:  draw.CircleGlyph{},
 	}
 	return s, nil
 }

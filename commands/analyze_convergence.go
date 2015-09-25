@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"code.google.com/p/plotinum/plot"
+	"github.com/gonum/plot"
 
 	"github.com/cloudfoundry-incubator/cicerone/converters"
 	. "github.com/cloudfoundry-incubator/cicerone/dsl"

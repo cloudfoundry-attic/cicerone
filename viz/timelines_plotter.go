@@ -3,7 +3,8 @@ package viz
 import (
 	"image/color"
 
-	"code.google.com/p/plotinum/plot"
+	"github.com/gonum/plot"
+	"github.com/gonum/plot/vg/draw"
 
 	. "github.com/cloudfoundry-incubator/cicerone/dsl"
 )
@@ -30,7 +31,7 @@ type timelineEvent struct {
 	Color color.Color
 }
 
-func (t *TimelinesPlotter) Plot(da plot.DrawArea, p *plot.Plot) {
+func (t *TimelinesPlotter) Plot(da draw.Canvas, p *plot.Plot) {
 	trX, trY := p.Transforms(&da)
 	y := t.Padding
 	for _, timeline := range t.Timelines {
@@ -68,7 +69,7 @@ func (t *TimelinesPlotter) Plot(da plot.DrawArea, p *plot.Plot) {
 	x = t.MinSeconds + dx
 
 	for i := 0; i < len(description); i++ {
-		textStyle := plot.TextStyle{
+		textStyle := draw.TextStyle{
 			Color: OrderedColors[i],
 			Font:  defaultFont,
 		}

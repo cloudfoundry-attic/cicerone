@@ -1,6 +1,9 @@
 package dsl
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 //Entries is a list of invidiual Entry(ies)
 type Entries []Entry
@@ -10,6 +13,7 @@ type Entries []Entry
 func (e Entries) First(matcher Matcher) (Entry, bool) {
 	for _, entry := range e {
 		if matcher.Match(entry) {
+			fmt.Println(entry.Message)
 			return entry, true
 		}
 	}

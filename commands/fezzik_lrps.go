@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"code.google.com/p/plotinum/plot"
+	"github.com/gonum/plot"
 
 	"github.com/cloudfoundry-incubator/cicerone/converters"
 	. "github.com/cloudfoundry-incubator/cicerone/dsl"
@@ -58,7 +58,7 @@ func (f *FezzikLRPs) Command(outputDir string, args ...string) error {
 
 	lrpStartTimelineDescription := TimelineDescription{
 		// Creating ActualLRP (proxy - this is the event emitted)
-		{"Create-Event", MatchMessage(`running-watcher.watching-for-actual-lrp-changes.sending-create`)},
+		{"Create-Event", MatchMessage(`watching-for-actual-lrp-changes.sending-create`)},
 		// Executor reserving container
 		{"Allocating", MatchMessage(`allocate-containers.allocating-container`)},
 		// Rep marked LRP CLAIMED in BBS

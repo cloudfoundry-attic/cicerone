@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"code.google.com/p/plotinum/plot"
+	"github.com/gonum/plot"
 
 	"strings"
 

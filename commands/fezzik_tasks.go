@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"code.google.com/p/plotinum/plot"
+	"github.com/gonum/plot"
 
 	"github.com/cloudfoundry-incubator/cicerone/converters"
 	. "github.com/cloudfoundry-incubator/cicerone/dsl"
@@ -43,33 +43,29 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 		e = e.Filter(RegExpMatcher(DataGetter("task-guid", "container-guid", "guid", "container.guid"), args[1]))
 	}
 
-	fmt.Println("Receptors that handled creates:", e.Filter(MatchMessage(`create\.creating-task`)).GroupBy(GetVM).Keys)
-	fmt.Println("Receptors that handled resolves:", e.Filter(MatchMessage(`resolved-task`)).GroupBy(GetVM).Keys)
+	fmt.Println("BBSs that handled creates:", e.Filter(MatchMessage(`desire-task\.starting`)).GroupBy(GetVM).Keys)
+	fmt.Println("BBSs that handled resolves:", e.Filter(MatchMessage(`resolved-task`)).GroupBy(GetVM).Keys)
 
 	byTaskGuid := e.GroupBy(DataGetter("task-guid", "container-guid", "guid", "container.guid"))
 
 	startToEndTimelineDescription := TimelineDescription{
-		// receptor says create.creating-task when it hears about our task
-		{"Creating", MatchMessage(`create\.creating-task`)},
-		// receptor says create.requesting-task-auction after it has bbs.DesiredTask
-		{"Persisted-Task", MatchMessage(`create\.requesting-task-auction`)},
-		// receptor says create.did-fetch-auctioneer-address after it fetches the auctioneer address from the BBS
-		{"Fetched-Auctioneer-Addr", MatchMessage(`create\.did-fetch-auctioneer-address`)},
-		// receptor says create.created after the auction has been submitted (this entails a round-trip to the auctioneer)
-		{"Auction-Submitted", MatchMessage(`task-handler\.create\.created`)},
+		// bbs says desire-task.starting when it hears about our task
+		{"Persisted-Task", MatchMessage(`desire-task\.starting`)},
+		// bbs says create.created after the auction has been submitted (this entails a round-trip to the auctioneer)
+		{"Auction-Submitted", MatchMessage(`desire-task\.finished`)},
 		// executor says allocating-container when the rep asks it to allocate a container for the task (this measures how long it took the auction to place the task on the rep)
 		{"Allocating-Container", MatchMessage(`\.allocating-container`)},
 		// the rep says processing-reserved-container when the executor emits the allocation event
 		{"Notified-Of-Allocation", MatchMessage(`\.processing-reserved-container`)},
 		// the rep says succeeded-starting-task when it succesfully transitions the task from PENDING to RUNNING in the BBS
-		{"Running-In-BBS", MatchMessage(`\.succeeded-starting-task`)},
+		{"Running-In-BBS", MatchMessage(`start-task\.finished`)},
 		// the executor says succeded-creating-container-in-garden when the garden container is created and ready to go
 		{"Created-Container", MatchMessage(`\.succeeded-creating-container-in-garden`)},
 		// the rep says task-processor.completing-task when it hears the task is complete
 		{"Completing-Task", MatchMessage(`task-processor\.completing-task`)},
 		// the rep says succeeded-completing-task when it transitions the task from RUNNING to COMPLETE
 		{"Persisted-Completed", MatchMessage(`task-processor\.succeeded-completing-task`)},
-		// the receptor says resolved-task when it transitions the task to RESOLVED (after hitting the fezzik callback)
+		// the bbs says resolved-task when it transitions the task to RESOLVED (after hitting the fezzik callback)
 		{"Resolved", MatchMessage(`resolved-task`)},
 	}
 
@@ -92,13 +88,12 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 	plotFezzikTaskTimelinesAndHistograms(startToEndTimelines, outputDir, "end-to-end", 7)
 
 	startToScheduledTimelineDescription := TimelineDescription{
-		{"Creating", MatchMessage(`create\.creating-task`)},
-		{"Persisted-Task", MatchMessage(`create\.requesting-task-auction`)},
-		{"Fetched-Auctioneer-Addr", MatchMessage(`create\.did-fetch-auctioneer-address`)},
-		{"Auction-Submitted", MatchMessage(`create\.created`)},
+		{"Desiring-Task", MatchMessage(`desire-task\.starting`)},
+		{"Persisted-Task", MatchMessage(`desire-task\.requesting-task-auction`)},
+		{"Auction-Submitted", MatchMessage(`desire-task\.finished`)},
 		{"Allocating-Container", MatchMessage(`\.allocating-container`)},
 		{"Notified-Of-Allocation", MatchMessage(`\.processing-reserved-container`)},
-		{"Running-In-BBS", MatchMessage(`\.succeeded-starting-task`)},
+		{"Running-In-BBS", MatchMessage(`start-task\.finished`)},
 	}
 
 	startToScheduledTimelines, err := byTaskGuid.ConstructTimelines(startToScheduledTimelineDescription)

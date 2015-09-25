@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"code.google.com/p/plotinum/plot"
+	"github.com/gonum/plot"
 
 	"github.com/cloudfoundry-incubator/cicerone/converters"
 	. "github.com/cloudfoundry-incubator/cicerone/dsl"

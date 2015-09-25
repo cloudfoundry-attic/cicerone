@@ -1,12 +1,12 @@
 package viz
 
-import "code.google.com/p/plotinum/plot"
+import "github.com/gonum/plot/vg/draw"
 
 type LineThumbnailer struct {
-	plot.LineStyle
+	draw.LineStyle
 }
 
-func (l *LineThumbnailer) Thumbnail(da *plot.DrawArea) {
-	y := da.Center().Y
-	da.StrokeLine2(l.LineStyle, da.Min.X, y, da.Max().X, y)
+func (l *LineThumbnailer) Thumbnail(c *draw.Canvas) {
+	y := c.Center().Y
+	c.StrokeLine2(l.LineStyle, c.Min.X, y, c.Max.X, y)
 }
