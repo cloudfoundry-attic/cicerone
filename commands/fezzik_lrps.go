@@ -72,9 +72,9 @@ func (f *FezzikLRPs) Command(outputDir string, args ...string) error {
 		// Streamed download into container
 		{"Streamed-in-Download", MatchMessage(`run-container.run.setup.download-step.stream-in-complete`)},
 		// Started Running LRP (grace) in container
-		{"Launch-Process", And(MatchMessage(`garden-server.run.spawned`), RegExpMatcher(DataGetter("spec.path"), `grace`))},
+		{"Launch-Process", And(MatchMessage(`garden-server.run.spawned`), RegExpMatcher(DataGetter("spec.Path"), `grace`))},
 		// Started Running monitor process (nc) in container
-		{"Launch-Monitor", And(MatchMessage(`garden-server.run.spawned`), RegExpMatcher(DataGetter("spec.path"), `nc`))},
+		{"Launch-Monitor", And(MatchMessage(`garden-server.run.spawned`), RegExpMatcher(DataGetter("spec.Path"), `nc`))},
 		// Executor transitioning container to RUNNING
 		{"Container-Is-Running", MatchMessage(`run-container.run.run-step-process.succeeded-transitioning-to-running`)},
 		// Rep transitioned LRP to RUNNING in BBS
@@ -106,26 +106,28 @@ func (f *FezzikLRPs) extractInstanceGuidGroups(e Entries, processGuid string) *G
 	//find all instance-guid groupings
 	//these might include instances for process guids *other* than the one we care about
 	unfilteredByInstanceGuid := e.GroupBy(TransformingGetter(TransformationMap{
-		"instance-guid":  TrimTransformation,
-		"instance_guid":  TrimTransformation,
-		"container-guid": TrimWithPrefixTransformation(processGuid + "-"),
-		"guid":           TrimWithPrefixTransformation(processGuid + "-"),
-		"container.guid": TrimWithPrefixTransformation(processGuid + "-"),
-		"handle":         TrimWithPrefixTransformation(processGuid + "-"),
+		"instance-guid":                         TrimTransformation,
+		"actual_lrp_instance-key.instance_guid": TrimTransformation,
+		"actual_lrp_instance_key.instance_guid": TrimTransformation,
+		"container-guid":                        TrimWithPrefixTransformation(processGuid + "-"),
+		"guid":                                  TrimWithPrefixTransformation(processGuid + "-"),
+		"container.guid":                        TrimWithPrefixTransformation(processGuid + "-"),
+		"handle":                                TrimWithPrefixTransformation(processGuid + "-"),
+		"allocation-request.Guid":               TrimWithPrefixTransformation(processGuid + "-"),
 	}))
 
 	//request.depot-client.allocate-containers.allocating-container allows us to correlate processguid with instanceguid
 	//this fetches all such log-lines by the requested processGuid
 	//then groups them by instance guid
 	instances := e.Filter(And(
-		MatchMessage("request.depot-client.allocate-containers.allocating-container"),
-		RegExpMatcher(DataGetter("container.tags.process-guid"), processGuid),
-	)).GroupBy(TransformingGetter(TransformationMap{"container.guid": TrimWithPrefixTransformation(processGuid + "-")}))
+		MatchMessage("rep.depot-client.allocate-containers.allocating-container"),
+		RegExpMatcher(DataGetter("allocation-request.Tags.process-guid"), processGuid),
+	)).GroupBy(TransformingGetter(TransformationMap{"allocation-request.Guid": TrimWithPrefixTransformation(processGuid + "-")}))
 
-	//running-watcher.watching-for-actual-lrp-changes.sending-create is emitted soon after the actualLRP is created in the BBS
+	//watching-for-actual-lrp-changes.sending-create is emitted soon after the actualLRP is created in the BBS
 	//this is important information and is a proxy for when the ActualLRP enters the system
 	createEventsByIndex := e.Filter(And(
-		MatchMessage("running-watcher.watching-for-actual-lrp-changes.sending-create"),
+		MatchMessage("watching-for-actual-lrp-changes.sending-create"),
 		RegExpMatcher(DataGetter("actual-lrp.process_guid"), processGuid),
 	)).GroupBy(DataGetter("actual-lrp.index"))
 
@@ -141,8 +143,8 @@ func (f *FezzikLRPs) extractInstanceGuidGroups(e Entries, processGuid string) *G
 		}
 
 		//we then work very hard to pick out the create event associated with the instance guid (by index)
-		indexEntry, _ := entries.First(MatchMessage("request.depot-client.allocate-containers.allocating-container"))
-		indexInterface, _ := DataGetter("container.tags.process-index").Get(indexEntry)
+		indexEntry, _ := entries.First(MatchMessage("rep.depot-client.allocate-containers.allocating-container"))
+		indexInterface, _ := DataGetter("allocation-request.Tags.process-index").Get(indexEntry)
 		index, _ := strconv.ParseFloat(indexInterface.(string), 64)
 
 		createEventsForIndex, ok := createEventsByIndex.Lookup(index)
@@ -160,10 +162,10 @@ func (f *FezzikLRPs) extractInstanceGuidGroups(e Entries, processGuid string) *G
 
 func plotFezzikLRPTimelinesAndHistograms(timelines Timelines, outputDir string, prefix string, vmEventIndex int) {
 	histograms := viz.NewEntryPairsHistogramBoard(timelines)
-	histograms.Save(3.0*float64(len(timelines.Description())), 6.0, filepath.Join(outputDir, prefix+"-histograms.png"))
+	histograms.Save(3.0*float64(len(timelines.Description())), 6.0, filepath.Join(outputDir, prefix+"-histograms.svg"))
 
 	correlationBoard, _ := viz.NewCorrelationBoard(timelines)
-	err := correlationBoard.Save(24.0, 24.0, filepath.Join(outputDir, prefix+"-correlation.png"))
+	err := correlationBoard.Save(24.0, 24.0, filepath.Join(outputDir, prefix+"-correlation.svg"))
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -174,7 +176,7 @@ func plotFezzikLRPTimelinesAndHistograms(timelines Timelines, outputDir string, 
 	p.Title.Text = "Timelines by End Time"
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-end-time.png"))
+	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-end-time.svg"))
 
 	//which VM?
 	timelines.SortByVMForEntryAtIndex(vmEventIndex)
@@ -183,7 +185,7 @@ func plotFezzikLRPTimelinesAndHistograms(timelines Timelines, outputDir string, 
 	p.Title.Text = "Timelines by VM"
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-vm.png"))
+	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-vm.svg"))
 
 	timelines.SortByStartTime()
 	timelineBoard = &viz.Board{}
@@ -191,5 +193,5 @@ func plotFezzikLRPTimelinesAndHistograms(timelines Timelines, outputDir string, 
 	p.Title.Text = "Timelines by Start Time"
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-start-time.png"))
+	timelineBoard.Save(32.0, 20.0, filepath.Join(outputDir, prefix+"-timelines-by-start-time.svg"))
 }

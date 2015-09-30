@@ -40,17 +40,19 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 	}
 
 	if len(args) == 2 {
-		e = e.Filter(RegExpMatcher(DataGetter("task-guid", "container-guid", "guid", "container.guid"), args[1]))
+		e = e.Filter(RegExpMatcher(DataGetter("task-guid", "container-guid", "guid", "container.guid", "allocation-request.Guid", "handle"), args[1]))
 	}
 
 	fmt.Println("BBSs that handled creates:", e.Filter(MatchMessage(`desire-task\.starting`)).GroupBy(GetVM).Keys)
 	fmt.Println("BBSs that handled resolves:", e.Filter(MatchMessage(`resolved-task`)).GroupBy(GetVM).Keys)
 
-	byTaskGuid := e.GroupBy(DataGetter("task-guid", "container-guid", "guid", "container.guid"))
+	byTaskGuid := e.GroupBy(DataGetter("task-guid", "container-guid", "guid", "container.guid", "allocation-request.Guid", "handle"))
 
 	startToEndTimelineDescription := TimelineDescription{
 		// bbs says desire-task.starting when it hears about our task
-		{"Persisted-Task", MatchMessage(`desire-task\.starting`)},
+		{"Desiring-Task", MatchMessage(`desire-task\.starting`)},
+		// bbs says the task is persisted
+		{"Persisted-Task", MatchMessage(`desire-task\.succeeded-persisting-task`)},
 		// bbs says create.created after the auction has been submitted (this entails a round-trip to the auctioneer)
 		{"Auction-Submitted", MatchMessage(`desire-task\.finished`)},
 		// executor says allocating-container when the rep asks it to allocate a container for the task (this measures how long it took the auction to place the task on the rep)
@@ -60,9 +62,14 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 		// the rep says succeeded-starting-task when it succesfully transitions the task from PENDING to RUNNING in the BBS
 		{"Running-In-BBS", MatchMessage(`start-task\.finished`)},
 		// the executor says succeded-creating-container-in-garden when the garden container is created and ready to go
-		{"Created-Container", MatchMessage(`\.succeeded-creating-container-in-garden`)},
+		{"Created-Container", MatchMessage(`\.succeeded-creating-garden-container`)},
+		// setting up egress rules for task container
+		{"Set-Up-Container-Network", MatchMessage(`\.succeeded-setting-up-net-out`)},
+		{"Finished-Running", MatchMessage(`\.run-step-process\.finished`)},
+		// the rep says that its fetching the result file
+		{"Fetching-Container-Result", MatchMessage(`\.fetching-container-result`)},
 		// the rep says task-processor.completing-task when it hears the task is complete
-		{"Completing-Task", MatchMessage(`task-processor\.completing-task`)},
+		{"Fetched-Container-Result", MatchMessage(`task-processor\.completing-task`)},
 		// the rep says succeeded-completing-task when it transitions the task from RUNNING to COMPLETE
 		{"Persisted-Completed", MatchMessage(`task-processor\.succeeded-completing-task`)},
 		// the bbs says resolved-task when it transitions the task to RESOLVED (after hitting the fezzik callback)
@@ -81,18 +88,25 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 		return err
 	}
 	completeStartToEndTimelines := startToEndTimelines.CompleteTimelines()
+
 	say.Println(0, say.Red("Complete Start-To-End Timelines: %d/%d (%.2f%%)",
 		len(completeStartToEndTimelines),
 		len(startToEndTimelines),
 		float64(len(completeStartToEndTimelines))/float64(len(startToEndTimelines))*100.0))
+	//	fmt.Println(completeStartToEndTimelines.DTStatsSlice())
 	plotFezzikTaskTimelinesAndHistograms(startToEndTimelines, outputDir, "end-to-end", 7)
 
 	startToScheduledTimelineDescription := TimelineDescription{
+		// bbs says desire-task.starting when it hears about our task
 		{"Desiring-Task", MatchMessage(`desire-task\.starting`)},
-		{"Persisted-Task", MatchMessage(`desire-task\.requesting-task-auction`)},
+		{"Persisted-Task", MatchMessage(`desire-task\.succeeded-persisting-task`)},
+		// bbs says create.created after the auction has been submitted (this entails a round-trip to the auctioneer)
 		{"Auction-Submitted", MatchMessage(`desire-task\.finished`)},
+		// executor says allocating-container when the rep asks it to allocate a container for the task (this measures how long it took the auction to place the task on the rep)
 		{"Allocating-Container", MatchMessage(`\.allocating-container`)},
+		// the rep says processing-reserved-container when the executor emits the allocation event
 		{"Notified-Of-Allocation", MatchMessage(`\.processing-reserved-container`)},
+		// the rep says succeeded-starting-task when it succesfully transitions the task from PENDING to RUNNING in the BBS
 		{"Running-In-BBS", MatchMessage(`start-task\.finished`)},
 	}
 
@@ -113,10 +127,10 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 
 func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, outputDir string, prefix string, vmEventIndex int) {
 	histograms := viz.NewEntryPairsHistogramBoard(timelines)
-	histograms.Save(3.0*float64(len(timelines.Description())), 6.0, filepath.Join(outputDir, prefix+"-histograms.png"))
+	histograms.Save(3.0*float64(len(timelines.Description())), 6.0, filepath.Join(outputDir, prefix+"-histograms.svg"))
 
 	correlationBoard, _ := viz.NewCorrelationBoard(timelines)
-	err := correlationBoard.Save(24.0, 24.0, filepath.Join(outputDir, prefix+"-correlation.png"))
+	err := correlationBoard.Save(24.0, 24.0, filepath.Join(outputDir, prefix+"-correlation.svg"))
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -127,7 +141,15 @@ func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, outputDir string,
 	p.Title.Text = "Timelines by End Time"
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-end-time.png"))
+	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-end-time.svg"))
+
+	timelines.SortByStartTime()
+	timelineBoard = &viz.Board{}
+	p, _ = plot.New()
+	p.Title.Text = "Timelines by Start Time"
+	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
+	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
+	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-start-time.svg"))
 
 	//which VM?
 	timelines.SortByVMForEntryAtIndex(vmEventIndex)
@@ -136,13 +158,5 @@ func plotFezzikTaskTimelinesAndHistograms(timelines Timelines, outputDir string,
 	p.Title.Text = "Timelines by VM"
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-vm.png"))
-
-	timelines.SortByStartTime()
-	timelineBoard = &viz.Board{}
-	p, _ = plot.New()
-	p.Title.Text = "Timelines by Start Time"
-	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
-	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-start-time.png"))
+	timelineBoard.Save(16.0, 10.0, filepath.Join(outputDir, prefix+"-timelines-by-vm.svg"))
 }

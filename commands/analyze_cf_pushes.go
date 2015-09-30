@@ -135,17 +135,17 @@ func plotCFPushesTimelinesAndHistograms(timelines Timelines, outputDir string, p
 	timelines.SortByStartTime()
 
 	histograms := viz.NewEntryPairsHistogramBoard(timelines)
-	histograms.Save(3.0*float64(len(timelines.Description())), 6.0, filepath.Join(outputDir, prefix+"-histograms.png"))
+	histograms.Save(3.0*float64(len(timelines.Description())), 6.0, filepath.Join(outputDir, prefix+"-histograms.svg"))
 
 	correlationBoard, _ := viz.NewCorrelationBoard(timelines)
-	correlationBoard.Save(24.0, 24.0, filepath.Join(outputDir, prefix+"-correlation.png"))
+	correlationBoard.Save(24.0, 24.0, filepath.Join(outputDir, prefix+"-correlation.svg"))
 
 	timelineBoard := &viz.Board{}
 	p, _ := plot.New()
 	p.Title.Text = "Timelines"
 	p.Add(viz.NewTimelinesPlotter(timelines, timelines.StartsAfter().Seconds(), timelines.EndsAfter().Seconds()))
 	timelineBoard.AddSubPlot(p, viz.Rect{0, 0, 1.0, 1.0})
-	timelineBoard.Save(16.0, 20.0, filepath.Join(outputDir, prefix+"-timelines.png"))
+	timelineBoard.Save(16.0, 20.0, filepath.Join(outputDir, prefix+"-timelines.svg"))
 }
 
 func plotCFPushesHistogramsByApplication(timelines Timelines, outputDir string, prefix string) {
@@ -153,9 +153,9 @@ func plotCFPushesHistogramsByApplication(timelines Timelines, outputDir string, 
 	group := timelines.GroupBy(MatchMessage(`Creating container`), DataGetter("app-type"))
 
 	histograms := viz.NewGroupedTimelineEntryPairsHistogramBoard(group)
-	histograms.Save(3.0*float64(len(timelines.Description())), 3.0, filepath.Join(outputDir, prefix+"-histograms.png"))
+	histograms.Save(3.0*float64(len(timelines.Description())), 3.0, filepath.Join(outputDir, prefix+"-histograms.svg"))
 
 	correlationBoard, _ := viz.NewGroupedCorrelationBoard(group)
-	correlationBoard.Save(24.0, 24.0, filepath.Join(outputDir, prefix+"-correlation.png"))
+	correlationBoard.Save(24.0, 24.0, filepath.Join(outputDir, prefix+"-correlation.svg"))
 
 }
