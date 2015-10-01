@@ -58,33 +58,35 @@ func (f *FezzikLRPs) Command(outputDir string, args ...string) error {
 
 	lrpStartTimelineDescription := TimelineDescription{
 		// Creating ActualLRP (proxy - this is the event emitted)
-		{"Create-Event", MatchMessage(`watching-for-actual-lrp-changes.sending-create`)},
+		{"Creating-ALRP", MatchMessage(`creating-raw-actual-lrp.starting`), 1},
 		// Executor reserving container
-		{"Allocating", MatchMessage(`allocate-containers.allocating-container`)},
+		{"Allocated", MatchMessage(`allocate-containers.finished-allocating-container`), 1},
+		{"Reserved-Container", MatchMessage(`claiming-lrp-container`), 1},
+		{"Claim-Request-Received", MatchMessage(`claim-actual-lrp.starting`), 1},
 		// Rep marked LRP CLAIMED in BBS
-		{"Claimed-ALRP", MatchMessage(`claim-actual-lrp.succeeded`)},
+		{"Claimed-ALRP", MatchMessage(`claim-actual-lrp.succeeded`), 1},
 		// Executor created actual container in Garden
-		{"Created-Container", MatchMessage(`run-container.create-in-garden.succeeded-creating-garden-container`)},
+		{"Created-Container", MatchMessage(`run-container.create-in-garden.succeeded-creating-garden-container`), 1},
 		// Executor configured container (memory limits, CPU limits, port mappings, etc.)
-		{"Configured-Container", MatchMessage(`run-container.create-in-garden.succeeded-getting-garden-container-info`)},
+		{"Configured-Container", MatchMessage(`run-container.create-in-garden.succeeded-getting-garden-container-info`), 1},
 		// Fetching download
-		{"Fetched-Download", MatchMessage(`run-container.run.setup.download-step.fetch-complete`)},
+		{"Fetched-Download", MatchMessage(`run-container.run.setup.download-step.fetch-complete`), 1},
 		// Streamed download into container
-		{"Streamed-in-Download", MatchMessage(`run-container.run.setup.download-step.stream-in-complete`)},
+		{"Streamed-in-Download", MatchMessage(`run-container.run.setup.download-step.stream-in-complete`), 1},
 		// Started Running LRP (grace) in container
-		{"Launch-Process", And(MatchMessage(`garden-server.run.spawned`), RegExpMatcher(DataGetter("spec.Path"), `grace`))},
+		{"Launch-Process", And(MatchMessage(`garden-server.run.spawned`), RegExpMatcher(DataGetter("spec.Path"), `grace`)), 1},
 		// Started Running monitor process (nc) in container
-		{"Launch-Monitor", And(MatchMessage(`garden-server.run.spawned`), RegExpMatcher(DataGetter("spec.Path"), `nc`))},
+		{"Launch-Monitor", And(MatchMessage(`garden-server.run.spawned`), RegExpMatcher(DataGetter("spec.Path"), `nc`)), 1},
 		// Executor transitioning container to RUNNING
-		{"Container-Is-Running", MatchMessage(`run-container.run.run-step-process.succeeded-transitioning-to-running`)},
+		{"Container-Is-Running", MatchMessage(`run-container.run.run-step-process.succeeded-transitioning-to-running`), 1},
 		// Rep transitioned LRP to RUNNING in BBS
-		{"Running-In-BBS", MatchMessage(`start-actual-lrp.succeeded`)},
+		{"Running-In-BBS", MatchMessage(`start-actual-lrp.succeeded`), 1},
 		// Rep requesting container stop
-		{"Stopping", MatchMessage(`lrp-stopper.stop.stopping`)},
+		{"Stopping", MatchMessage(`lrp-stopper.stop.stopping`), 1},
 		// LRP has been cancelled
-		{"Stopped", MatchMessage(`run-container.run.run-step-process.step-cancelled`)},
+		{"Stopped", MatchMessage(`run-container.run.run-step-process.step-cancelled`), 1},
 		// Rep transitioned LRP to COMPLETED in BBS
-		{"Remove-From-BBS", MatchMessage(`run-container.run.run-step-process.succeeded-transitioning-to-complete`)},
+		{"Remove-From-BBS", MatchMessage(`run-container.run.run-step-process.succeeded-transitioning-to-complete`), 1},
 	}
 
 	lrpStartTimelines, err := byInstanceGuid.ConstructTimelines(lrpStartTimelineDescription)
@@ -127,7 +129,7 @@ func (f *FezzikLRPs) extractInstanceGuidGroups(e Entries, processGuid string) *G
 	//watching-for-actual-lrp-changes.sending-create is emitted soon after the actualLRP is created in the BBS
 	//this is important information and is a proxy for when the ActualLRP enters the system
 	createEventsByIndex := e.Filter(And(
-		MatchMessage("watching-for-actual-lrp-changes.sending-create"),
+		MatchMessage("creating-raw-actual-lrp.starting"),
 		RegExpMatcher(DataGetter("actual-lrp.process_guid"), processGuid),
 	)).GroupBy(DataGetter("actual-lrp.index"))
 

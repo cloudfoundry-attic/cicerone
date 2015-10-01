@@ -55,17 +55,17 @@ func (f *AnalyzeCFPushes) Command(outputDir string, args ...string) error {
 	}
 
 	timelineDescription := TimelineDescription{
-		{"Created", MatchMessage(`Updated app with guid .* \(\{"diego"=>true`)},
-		{"CC-Says-Start", MatchMessage(`Updated app with guid .* \(\{"state"=>"STARTED"\}\)`)},
-		{"Creating-Stg", And(MatchMessage(`Creating container`), MatchJob("STG"))},
-		{"Created-Stg", And(MatchMessage(`Successfully created container`), MatchJob("STG"))},
-		{"Finish-DL-App", MatchMessage(`Downloaded app package`)},
-		{"Finish-DL-Buildpack", MatchMessage(`Downloaded buildpacks`)},
-		{"Finish-Builder", MatchMessage(`Staging complete`)},
-		{"Finish-Upload", MatchMessage(`Uploading complete`)},
-		{"Creating-Inst", And(MatchMessage(`Creating container`), MatchJob("CELL"), MatchIndex(0))},
-		{"Created-Inst", And(MatchMessage(`Successfully created container`), MatchJob("CELL"), MatchIndex(0))},
-		{"Healthy", MatchMessage(`healthcheck passed`)},
+		// {"Created", MatchMessage(`Updated app with guid .* \(\{"diego"=>true`), 1},
+		{"CC-Says-Start", MatchMessage(`Updated app with guid .* \(\{"state"=>"STARTED"\}\)`), 1},
+		{"Creating-Stg", And(MatchMessage(`Creating container`), MatchJob("STG")), 1},
+		{"Created-Stg", And(MatchMessage(`Successfully created container`), MatchJob("STG")), 1},
+		{"Finish-DL-App", MatchMessage(`Downloaded app package`), 1},
+		{"Finish-DL-Buildpack", MatchMessage(`Downloaded buildpacks`), 1},
+		{"Finish-Builder", MatchMessage(`Staging complete`), 1},
+		{"Finish-Upload", MatchMessage(`Uploading complete`), 1},
+		{"Creating-Inst", And(MatchMessage(`Creating container`), MatchJob("CELL"), MatchIndex(0)), 1},
+		{"Created-Inst", And(MatchMessage(`Successfully created container`), MatchJob("CELL"), MatchIndex(0)), 1},
+		{"Healthy", MatchMessage(`healthcheck passed`), 1},
 	}
 
 	timelines, err := byApplication.ConstructTimelines(timelineDescription)

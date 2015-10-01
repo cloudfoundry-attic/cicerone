@@ -7,6 +7,7 @@ package dsl
 type TimelinePoint struct {
 	Name    string
 	Matcher Matcher
+	Squash  float64
 }
 
 //A TimelineDescription is an ordered list of TimelinePoints.

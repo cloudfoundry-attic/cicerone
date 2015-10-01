@@ -47,16 +47,16 @@ func (f *AnalyzeCreateContainer) Command(outputDir string, args ...string) error
 	}
 
 	timelineDescription := TimelineDescription{
-		{"Creating", MatchMessage(`garden-linux\.pool\..*\.creating`)},
-		{"AcquiredPR", MatchMessage(`garden-linux\.pool\..*\.acquired-pool-resources`)},
-		{"rootfs-created", MatchMessage(`garden-linux\.pool\..*\.create-rootfs\.command\.succeeded`)},
-		{"create-sh-finished", MatchMessage(`garden-linux\.pool\..*\.create-script\.command\.succeeded`)},
-		{"log-chain-created", MatchMessage(`garden-linux\..*\.filter\.log-chain-created`)},
-		{"log-chain-conntrack-set-up", MatchMessage(`garden-linux\..*\.filter\.log-chain-conntrack-set-up`)},
-		{"log-chain-setup-finished", MatchMessage(`garden-linux\..*\.filter\.log-chain-setup-finished`)},
-		{"filter-setup", MatchMessage(`garden-linux\.pool\..*\.setup-filter\.finished`)},
-		{"Created", MatchMessage(`garden-linux\.pool\..*\.created`)},
-		{"Started", MatchMessage(`garden-linux\.pool\..*\.start\.started`)},
+		{"Creating", MatchMessage(`garden-linux\.pool\..*\.creating`), 1},
+		{"AcquiredPR", MatchMessage(`garden-linux\.pool\..*\.acquired-pool-resources`), 1},
+		{"rootfs-created", MatchMessage(`garden-linux\.pool\..*\.create-rootfs\.command\.succeeded`), 1},
+		{"create-sh-finished", MatchMessage(`garden-linux\.pool\..*\.create-script\.command\.succeeded`), 1},
+		{"log-chain-created", MatchMessage(`garden-linux\..*\.filter\.log-chain-created`), 1},
+		{"log-chain-conntrack-set-up", MatchMessage(`garden-linux\..*\.filter\.log-chain-conntrack-set-up`), 1},
+		{"log-chain-setup-finished", MatchMessage(`garden-linux\..*\.filter\.log-chain-setup-finished`), 1},
+		{"filter-setup", MatchMessage(`garden-linux\.pool\..*\.setup-filter\.finished`), 1},
+		{"Created", MatchMessage(`garden-linux\.pool\..*\.created`), 1},
+		{"Started", MatchMessage(`garden-linux\.pool\..*\.start\.started`), 1},
 	}
 
 	timelines, err := entriesByHandle.ConstructTimelines(timelineDescription)

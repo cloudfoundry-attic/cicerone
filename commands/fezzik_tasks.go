@@ -50,30 +50,33 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 
 	startToEndTimelineDescription := TimelineDescription{
 		// bbs says desire-task.starting when it hears about our task
-		{"Desiring-Task", MatchMessage(`desire-task\.starting`)},
+		{"Desiring-Task", MatchMessage(`desire-task\.starting`), 1},
 		// bbs says the task is persisted
-		{"Persisted-Task", MatchMessage(`desire-task\.succeeded-persisting-task`)},
+		{"Persisted-Task", MatchMessage(`desire-task\.succeeded-persisting-task`), 1},
 		// bbs says create.created after the auction has been submitted (this entails a round-trip to the auctioneer)
-		{"Auction-Submitted", MatchMessage(`desire-task\.finished`)},
+		{"Auction-Submitted", MatchMessage(`desire-task\.finished`), 1},
 		// executor says allocating-container when the rep asks it to allocate a container for the task (this measures how long it took the auction to place the task on the rep)
-		{"Allocating-Container", MatchMessage(`\.allocating-container`)},
+		{"Allocating-Container", MatchMessage(`\.allocating-container`), 1},
 		// the rep says processing-reserved-container when the executor emits the allocation event
-		{"Notified-Of-Allocation", MatchMessage(`\.processing-reserved-container`)},
+		{"Notified-Of-Allocation", MatchMessage(`\.processing-reserved-container`), 1},
 		// the rep says succeeded-starting-task when it succesfully transitions the task from PENDING to RUNNING in the BBS
-		{"Running-In-BBS", MatchMessage(`start-task\.finished`)},
+		{"Running-In-BBS", MatchMessage(`start-task\.finished`), 1},
 		// the executor says succeded-creating-container-in-garden when the garden container is created and ready to go
-		{"Created-Container", MatchMessage(`\.succeeded-creating-garden-container`)},
+		{"Created-Container", MatchMessage(`\.succeeded-creating-garden-container`), 1},
 		// setting up egress rules for task container
-		{"Set-Up-Container-Network", MatchMessage(`\.succeeded-setting-up-net-out`)},
-		{"Finished-Running", MatchMessage(`\.run-step-process\.finished`)},
+		{"Set-Up-Container-Network", MatchMessage(`\.succeeded-setting-up-net-out`), 1},
+		{"Started-Running", MatchMessage(`\.run-step-process\.succeeded-transitioning-to-running`), 1},
+		{"Process-Created", MatchMessage(`successful-process-create`), 1},
+		{"Process-Exited", MatchMessage(`process-exit`), 1},
+		{"Finished-Running", MatchMessage(`\.run-step-process\.finished`), 1},
 		// the rep says that its fetching the result file
-		{"Fetching-Container-Result", MatchMessage(`\.fetching-container-result`)},
+		{"Fetching-Container-Result", MatchMessage(`\.fetching-container-result`), 1},
 		// the rep says task-processor.completing-task when it hears the task is complete
-		{"Fetched-Container-Result", MatchMessage(`task-processor\.completing-task`)},
+		{"Fetched-Container-Result", MatchMessage(`task-processor\.completing-task`), 1},
 		// the rep says succeeded-completing-task when it transitions the task from RUNNING to COMPLETE
-		{"Persisted-Completed", MatchMessage(`task-processor\.succeeded-completing-task`)},
+		{"Persisted-Completed", MatchMessage(`task-processor\.succeeded-completing-task`), 1},
 		// the bbs says resolved-task when it transitions the task to RESOLVED (after hitting the fezzik callback)
-		{"Resolved", MatchMessage(`resolved-task`)},
+		{"Resolved", MatchMessage(`resolved-task`), 1},
 	}
 
 	say.Println(0, say.Green("Distribution"))
@@ -98,16 +101,16 @@ func (f *FezzikTasks) Command(outputDir string, args ...string) error {
 
 	startToScheduledTimelineDescription := TimelineDescription{
 		// bbs says desire-task.starting when it hears about our task
-		{"Desiring-Task", MatchMessage(`desire-task\.starting`)},
-		{"Persisted-Task", MatchMessage(`desire-task\.succeeded-persisting-task`)},
+		{"Desiring-Task", MatchMessage(`desire-task\.starting`), 1},
+		{"Persisted-Task", MatchMessage(`desire-task\.succeeded-persisting-task`), 1},
 		// bbs says create.created after the auction has been submitted (this entails a round-trip to the auctioneer)
-		{"Auction-Submitted", MatchMessage(`desire-task\.finished`)},
+		{"Auction-Submitted", MatchMessage(`desire-task\.finished`), 1},
 		// executor says allocating-container when the rep asks it to allocate a container for the task (this measures how long it took the auction to place the task on the rep)
-		{"Allocating-Container", MatchMessage(`\.allocating-container`)},
+		{"Allocating-Container", MatchMessage(`\.allocating-container`), 1},
 		// the rep says processing-reserved-container when the executor emits the allocation event
-		{"Notified-Of-Allocation", MatchMessage(`\.processing-reserved-container`)},
+		{"Notified-Of-Allocation", MatchMessage(`\.processing-reserved-container`), 1},
 		// the rep says succeeded-starting-task when it succesfully transitions the task from PENDING to RUNNING in the BBS
-		{"Running-In-BBS", MatchMessage(`start-task\.finished`)},
+		{"Running-In-BBS", MatchMessage(`start-task\.finished`), 1},
 	}
 
 	startToScheduledTimelines, err := byTaskGuid.ConstructTimelines(startToScheduledTimelineDescription)

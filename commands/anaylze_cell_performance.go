@@ -51,23 +51,23 @@ func (f *AnalyzeCellPerformance) Command(outputDir string, args ...string) error
 	fmt.Printf("Found %d sessions\n", len(bySession.Keys))
 
 	bulkCycleTimelineDescription := TimelineDescription{
-		{"Starting", MatchMessage(`sync\.starting`)},
-		{"Finished", MatchMessage(`sync\.finished`)},
+		{"Starting", MatchMessage(`sync\.starting`), 1},
+		{"Finished", MatchMessage(`sync\.finished`), 1},
 	}
 
 	auctionFetchingTimelineDescription := TimelineDescription{
-		{"StartFetching", MatchMessage(`rep.auction-fetch-state.handling`)},
-		{"FinishedFetching", MatchMessage(`rep.auction-fetch-state.success`)},
+		{"StartFetching", MatchMessage(`rep.auction-fetch-state.handling`), 1},
+		{"FinishedFetching", MatchMessage(`rep.auction-fetch-state.success`), 1},
 	}
 
 	auctionPerformingTimelineDescription := TimelineDescription{
-		{"StartPerforming", MatchMessage(`rep.auction-perform-work.handling`)},
-		{"FinishedPerforming", MatchMessage(`rep.auction-perform-work.success`)},
+		{"StartPerforming", MatchMessage(`rep.auction-perform-work.handling`), 1},
+		{"FinishedPerforming", MatchMessage(`rep.auction-perform-work.success`), 1},
 	}
 
 	containerMetricTimelineDescription := TimelineDescription{
-		{"StartFetching", MatchMessage(`rep.container-metrics-reporter.tick.started`)},
-		{"FinishedFetching", MatchMessage(`rep.container-metrics-reporter.tick.done`)},
+		{"StartFetching", MatchMessage(`rep.container-metrics-reporter.tick.started`), 1},
+		{"FinishedFetching", MatchMessage(`rep.container-metrics-reporter.tick.done`), 1},
 	}
 
 	fmt.Printf("Average Bulk Sync Duration: %v\n", calculateAverageTime(bulkCycleTimelineDescription, bySession))

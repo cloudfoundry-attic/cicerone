@@ -29,6 +29,8 @@ func (t Timelines) CompleteTimelines() Timelines {
 	for _, timeline := range t {
 		if timeline.IsComplete() {
 			subset = append(subset, timeline)
+		} else {
+			fmt.Println("Incomplete timeline:", timeline.String())
 		}
 	}
 	return subset

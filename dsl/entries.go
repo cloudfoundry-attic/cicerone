@@ -1,6 +1,9 @@
 package dsl
 
-import "io"
+import (
+	"io"
+	"time"
+)
 
 //Entries is a list of invidiual Entry(ies)
 type Entries []Entry
@@ -35,8 +38,17 @@ func (e Entries) ConstructTimeline(description TimelineDescription, zeroEntry En
 		ZeroEntry:   zeroEntry,
 	}
 
-	for _, point := range description {
+	timeOffset := time.Duration(0)
+
+	for i, point := range description {
 		entry, _ := e.First(point.Matcher)
+		if i > 0 {
+			previousEntry, _ := e.First(description[i-1].Matcher)
+			duration := entry.Timestamp.Sub(previousEntry.Timestamp)
+			timeOffset -= time.Duration(float64(duration) * (1 - point.Squash))
+			entry.Timestamp = entry.Timestamp.Add(timeOffset)
+		}
+
 		timeline.Entries = append(timeline.Entries, entry)
 	}
 
